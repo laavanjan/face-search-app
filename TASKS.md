@@ -32,10 +32,10 @@ A portfolio project: upload a reference photo, get back every photo containing t
 - [ ] Point at Qdrant Cloud once cluster is provisioned
 
 ## Phase 4 - Backend API
-- [ ] `POST /upload` - accepts a photo, runs detect -> filter -> embed -> store
-- [ ] `POST /search` - accepts a reference photo, returns matching image IDs
-- [ ] Handle edge cases: no face detected, multiple faces, unsupported file type
-- [ ] Write a few unit tests for the detection/embedding functions
+- [x] `POST /upload` - detect -> filter -> embed -> store
+- [x] `POST /search` - reference photo -> cosine matches
+- [x] Handles no-face / multi-face / bad content-type / oversize
+- [x] Unit tests for pipeline + health
 
 ## Phase 5 - Frontend
 - [ ] Upload page (drag-and-drop or file picker)
