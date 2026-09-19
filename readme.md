@@ -74,6 +74,17 @@ cd backend
 python -m venv .venv
 .venv\Scripts\activate           # Windows
 pip install -r requirements.txt
+copy .env.example .env
+uvicorn app.main:app --reload
+```
+
+First request downloads the InsightFace `buffalo_l` model (~280 MB) into `~/.insightface`.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
 ```
 
 ### Environment variables
