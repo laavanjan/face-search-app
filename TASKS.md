@@ -12,11 +12,11 @@ A portfolio project: upload a reference photo, get back every photo containing t
 - [x] Set up `requirements.txt`
 
 ## Phase 1 - Core detection + embedding pipeline (local only, no cloud yet)
-- [ ] Install `insightface` and `onnxruntime`
-- [ ] Write a script that loads the InsightFace model (`buffalo_l`)
-- [ ] Run detection on 5 sample photos, print bounding boxes
-- [ ] Generate embeddings for detected faces, print vector shape (should be 512-d)
-- [ ] Sanity check: same person across 2 photos -> high cosine similarity; different people -> low similarity
+- [x] Install `insightface` and `onnxruntime`
+- [x] Load the InsightFace model (`buffalo_l`) lazily on first request
+- [x] Detect faces + filter by score & size (`app/services/face_engine.py`)
+- [x] Generate 512-d L2-normalized embeddings
+- [x] Sanity-check similarity in tests (`tests/test_pipeline.py`)
 
 ## Phase 2 - Optional cloud detection layer (Vision API / Rekognition)
 - [ ] Create GCP or AWS account, set a budget alert
