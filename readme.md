@@ -22,9 +22,9 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    F[Upload reference photo] --> G[Detect + embed face - InsightFace]
-    G --> H[Similarity search - Qdrant cosine search]
-    H --> I[Return matches - gallery of photos]
+    F[Reference photo] --> G[Detect + embed largest face]
+    G --> H[Cosine similarity - Qdrant]
+    H --> I[Ranked matches - gallery]
 ```
 
 Amazon Rekognition handles face detection and quality scoring (blur, lighting) - it's fast, managed, and free at this project's scale. It does *not* do identity matching, so the actual "is this the same person" work is done by an open-source embedding model (InsightFace / ArcFace) running locally, with Qdrant handling the similarity search. Neither tool is asked to do the job the other one does better.
