@@ -27,7 +27,7 @@ flowchart TD
     H --> I[Ranked matches - gallery]
 ```
 
-Amazon Rekognition handles face detection and quality scoring (blur, lighting) - it's fast, managed, and free at this project's scale. It does *not* do identity matching, so the actual "is this the same person" work is done by an open-source embedding model (InsightFace / ArcFace) running locally, with Qdrant handling the similarity search. Neither tool is asked to do the job the other one does better.
+Rekognition (when AWS is configured) contributes bounding-box quality scoring; identity matching is always done by ArcFace so we don't pay per-image for recognition. When AWS is blank, InsightFace handles both jobs - the app is fully usable locally with no cloud accounts.
 
 ## Tech stack
 
