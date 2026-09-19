@@ -18,11 +18,11 @@ A portfolio project: upload a reference photo, get back every photo containing t
 - [x] Generate 512-d L2-normalized embeddings
 - [x] Sanity-check similarity in tests (`tests/test_pipeline.py`)
 
-## Phase 2 - Optional cloud detection layer (Vision API / Rekognition)
-- [ ] Create GCP or AWS account, set a budget alert
-- [ ] Enable Vision API (GCP) or Rekognition (AWS)
-- [ ] Write a function that calls DetectFaces and parses bounding box + quality score
-- [ ] Add a filter step: discard blurry/low-quality crops before embedding
+## Phase 2 - Optional cloud detection layer (Rekognition)
+- [x] Wire up an optional Rekognition path (`app/services/rekognition.py`)
+- [x] Blend Rekognition quality score with InsightFace confidence when enabled
+- [x] Fall back cleanly to InsightFace-only when AWS is blank
+- [ ] Create AWS account, set a budget alert (deferred - AWS blank)
 
 ## Phase 3 - Vector storage with Qdrant
 - [ ] Sign up for Qdrant Cloud free tier, get cluster URL + API key
