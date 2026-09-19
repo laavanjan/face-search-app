@@ -44,11 +44,12 @@ A portfolio project: upload a reference photo, get back every photo containing t
 - [x] Loading + error states, live health status bar
 
 ## Phase 6 - Deploy
-- [ ] Containerize the backend (`Dockerfile`)
-- [ ] Deploy backend (Cloud Run on GCP, or Lambda + Mangum on AWS)
-- [ ] Deploy frontend (Firebase Hosting / Amplify / Vercel)
-- [ ] Confirm budget alerts are active before going live
-- [ ] Full end-to-end test in production
+- [x] Backend Dockerfile
+- [x] `docker compose` for local Qdrant + backend + frontend
+- [x] Mangum handler exported for Lambda
+- [ ] Deploy backend to Lambda / Cloud Run
+- [ ] Deploy frontend to Vercel / Amplify
+- [ ] End-to-end test in production
 
 ## Phase 7 - Portfolio polish (stretch)
 - [ ] Write a proper README: architecture diagram, demo GIF, tech stack
