@@ -33,12 +33,35 @@ Rekognition (when AWS is configured) contributes bounding-box quality scoring; i
 
 | Layer | Tool |
 |---|---|
-| Face detection + quality scoring | Amazon Rekognition |
-| Face embedding | InsightFace (ArcFace) |
-| Vector search | Qdrant Cloud |
-| Backend | FastAPI, deployed on AWS Lambda (via Mangum) |
-| Photo storage | Amazon S3 |
-| Frontend | Next.js |
+| Face detection + quality scoring | InsightFace (`buffalo_l`) - optional Amazon Rekognition |
+| Face embedding | InsightFace / ArcFace (512-d) |
+| Vector search | Qdrant (cloud, self-hosted, or in-memory) |
+| Backend | FastAPI + Mangum (Lambda-ready) |
+| Photo storage | Amazon S3 - local disk fallback |
+| Frontend | Next.js 14 (App Router) + Tailwind |
+
+## Repo layout
+
+```
+backend/
+  app/
+    main.py              FastAPI app + Mangum handler
+    config.py            pydantic-settings, feature toggles
+    routes/              upload - search - photos - gallery
+    services/
+      face_engine.py     InsightFace loader + analyzer
+      rekognition.py     Optional AWS quality scorer
+      storage.py         S3 / local filesystem
+      vector_store.py    Qdrant client (cloud / memory)
+      pipeline.py        detect -> embed -> upsert / search
+  tests/                 pytest, no model download required
+  Dockerfile
+frontend/
+  app/                   /, /search, /gallery (App Router)
+  components/            Dropzone, StatusBar
+  lib/api.ts             typed API client
+docker-compose.yml       backend + qdrant + frontend
+```
 
 ## Getting started
 
