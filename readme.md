@@ -65,19 +65,15 @@ docker-compose.yml       backend + qdrant + frontend
 
 ## Getting started
 
+The app runs **with zero AWS credentials** - S3 falls back to local disk, Rekognition is skipped, and Qdrant runs in-memory. Set env vars later to graduate any of those to their cloud counterpart.
+
+### Backend
+
 ```bash
-# clone
-git clone https://github.com/laavanjan/face-search-app.git
-cd face-search-app
-
-# backend
-python -m venv venv
-source venv/bin/activate
+cd backend
+python -m venv .venv
+.venv\Scripts\activate           # Windows
 pip install -r requirements.txt
-
-# frontend
-cd frontend
-npm install
 ```
 
 ### Environment variables
