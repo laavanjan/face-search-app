@@ -92,21 +92,20 @@ Open http://localhost:3000. `/api/*` and `/photos/*` are proxied to the backend.
 
 ### Environment variables
 
-Create a `.env` file in the backend directory:
+Everything is optional. Leave blank for local mode.
 
 ```
 AWS_ACCESS_KEY_ID=
 AWS_SECRET_ACCESS_KEY=
 AWS_REGION=
 S3_BUCKET_NAME=
-QDRANT_URL=
+QDRANT_URL=                # blank -> in-memory qdrant
 QDRANT_API_KEY=
-```
-
-### Running locally
-
-```bash
-uvicorn main:app --reload
+QDRANT_COLLECTION=faces
+MIN_FACE_SIZE=40
+MIN_DET_SCORE=0.5
+LOCAL_PHOTO_DIR=./data/photos
+ALLOWED_ORIGINS=http://localhost:3000
 ```
 
 ## Project status
