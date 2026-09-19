@@ -38,9 +38,10 @@ A portfolio project: upload a reference photo, get back every photo containing t
 - [x] Unit tests for pipeline + health
 
 ## Phase 5 - Frontend
-- [ ] Upload page (drag-and-drop or file picker)
-- [ ] Results gallery page showing matched photos
-- [ ] Wire up API calls, loading states, error states
+- [x] Index page with drag-and-drop
+- [x] Search page with adjustable threshold slider
+- [x] Gallery page listing indexed photos
+- [x] Loading + error states, live health status bar
 
 ## Phase 6 - Deploy
 - [ ] Containerize the backend (`Dockerfile`)
