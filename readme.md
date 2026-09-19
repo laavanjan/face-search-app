@@ -85,7 +85,10 @@ First request downloads the InsightFace `buffalo_l` model (~280 MB) into `~/.ins
 ```bash
 cd frontend
 npm install
+npm run dev
 ```
+
+Open http://localhost:3000. `/api/*` and `/photos/*` are proxied to the backend.
 
 ### Environment variables
 
