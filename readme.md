@@ -108,6 +108,14 @@ LOCAL_PHOTO_DIR=./data/photos
 ALLOWED_ORIGINS=http://localhost:3000
 ```
 
+### One-command dev with Docker
+
+```bash
+docker compose up --build
+```
+
+Spins up Qdrant, the FastAPI backend, and the Next.js frontend on `:3000`.
+
 ## Project status
 
 This project is being built in phases - see [TASKS.md](./TASKS.md) for the full breakdown, from local detection/embedding through deployment.
