@@ -116,13 +116,36 @@ docker compose up --build
 
 Spins up Qdrant, the FastAPI backend, and the Next.js frontend on `:3000`.
 
-## Project status
+## API
 
-This project is being built in phases - see [TASKS.md](./TASKS.md) for the full breakdown, from local detection/embedding through deployment.
+| Method | Path | Body | Description |
+|---|---|---|---|
+| POST | `/upload` | multipart `file` | Detect, embed, index every face in the photo. |
+| POST | `/search` | multipart `file`, `limit`, `threshold` | Return matching photos by cosine similarity. |
+| GET | `/photos/{photo_id}` | -- | Fetch stored photo (S3 or local). |
+| GET | `/gallery?limit=100` | -- | Distinct indexed photos. |
+| GET | `/health` | -- | Status + which backends are active. |
 
-## Cost
+Interactive docs live at `/docs`.
 
-Designed to run entirely within free-tier limits at small scale (under ~1,000 photos): AWS Lambda, S3, and Rekognition's free tier, plus Qdrant Cloud's free 1GB cluster. See notes in TASKS.md for what happens to Rekognition costs after its 12-month free tier window.
+## Tests
+
+```bash
+cd backend
+pytest
+```
+
+Tests mock the InsightFace model so they run without downloading anything.
+
+## Deploy notes
+
+- `mangum` is wired up in `app/main.py`; ship the same container image to Lambda with an ARM64 image and set the handler to `app.main.handler`.
+- Frontend deploys anywhere static (Vercel, Amplify, Firebase Hosting).
+- Use Qdrant Cloud's 1 GB free cluster for production vector search; drop the URL and API key into the env vars.
+
+## Roadmap
+
+See [TASKS.md](./TASKS.md). Phase 0-5 are wired up; deployment and portfolio polish are next.
 
 ## License
 
