@@ -25,10 +25,11 @@ A portfolio project: upload a reference photo, get back every photo containing t
 - [ ] Create AWS account, set a budget alert (deferred - AWS blank)
 
 ## Phase 3 - Vector storage with Qdrant
-- [ ] Sign up for Qdrant Cloud free tier, get cluster URL + API key
-- [ ] Create a collection (512 dimensions, cosine distance)
-- [ ] Write an upsert function: embedding + image reference + quality metadata
-- [ ] Manually index 10 photos, confirm vectors are stored and queryable
+- [x] Qdrant client with in-memory fallback (`app/services/vector_store.py`)
+- [x] 512-d cosine collection created on startup
+- [x] Upsert with photo/face/bbox/quality payload
+- [x] Search endpoint returns matches with scores
+- [ ] Point at Qdrant Cloud once cluster is provisioned
 
 ## Phase 4 - Backend API
 - [ ] `POST /upload` - accepts a photo, runs detect -> filter -> embed -> store
