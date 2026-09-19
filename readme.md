@@ -12,10 +12,10 @@ The system splits detection and recognition into two separate concerns, each han
 
 ```mermaid
 flowchart TD
-    A[Upload photo] --> B[Detect faces - Amazon Rekognition]
-    B --> C[Filter + crop - discard blurry/low-quality]
-    C --> D[Generate embedding - InsightFace ArcFace]
-    D --> E[Store vector - Qdrant + quality metadata]
+    A[Upload photo] --> B[Detect faces - InsightFace + optional Rekognition]
+    B --> C[Filter + score quality]
+    C --> D[Generate embedding - ArcFace 512-d]
+    D --> E[Store vector - Qdrant + payload]
 ```
 
 **Search**
