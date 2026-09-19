@@ -5,18 +5,18 @@ A portfolio project: upload a reference photo, get back every photo containing t
 ---
 
 ## Phase 0 - Repo & environment setup
-- [ ] Create GitHub repo, add `.gitignore` (Python + Node)
-- [ ] Add README stub with project description
-- [ ] Create Python virtual environment, install `fastapi`, `uvicorn`
-- [ ] Scaffold Next.js frontend (`npx create-next-app`)
-- [ ] Set up `requirements.txt` / `pyproject.toml`
+- [x] Create GitHub repo, add `.gitignore` (Python + Node)
+- [x] Add README stub with project description
+- [x] Create Python virtual environment, install `fastapi`, `uvicorn`
+- [x] Scaffold Next.js frontend (App Router, Tailwind)
+- [x] Set up `requirements.txt`
 
 ## Phase 1 - Core detection + embedding pipeline (local only, no cloud yet)
 - [ ] Install `insightface` and `onnxruntime`
 - [ ] Write a script that loads the InsightFace model (`buffalo_l`)
 - [ ] Run detection on 5 sample photos, print bounding boxes
 - [ ] Generate embeddings for detected faces, print vector shape (should be 512-d)
-- [ ] Sanity check: same person across 2 photos → high cosine similarity; different people → low similarity
+- [ ] Sanity check: same person across 2 photos -> high cosine similarity; different people -> low similarity
 
 ## Phase 2 - Optional cloud detection layer (Vision API / Rekognition)
 - [ ] Create GCP or AWS account, set a budget alert
@@ -31,7 +31,7 @@ A portfolio project: upload a reference photo, get back every photo containing t
 - [ ] Manually index 10 photos, confirm vectors are stored and queryable
 
 ## Phase 4 - Backend API
-- [ ] `POST /upload` - accepts a photo, runs detect → filter → embed → store
+- [ ] `POST /upload` - accepts a photo, runs detect -> filter -> embed -> store
 - [ ] `POST /search` - accepts a reference photo, returns matching image IDs
 - [ ] Handle edge cases: no face detected, multiple faces, unsupported file type
 - [ ] Write a few unit tests for the detection/embedding functions
