@@ -2,13 +2,13 @@
 
 Upload a photo of someone, get back every photo in your library that they appear in.
 
-A face-recognition photo search built to explore the tradeoff between managed cloud vision APIs and open-source computer-vision models — combining both where each is the better tool.
+A face-recognition photo search built to explore the tradeoff between managed cloud vision APIs and open-source computer-vision models - combining both where each is the better tool.
 
 ## How it works
 
 The system splits detection and recognition into two separate concerns, each handled by the tool best suited to it:
 
-**Indexing** - when photos are uploaded:
+**Indexing**
 
 ```mermaid
 flowchart TD
@@ -18,7 +18,7 @@ flowchart TD
     D --> E[Store vector - Qdrant + quality metadata]
 ```
 
-**Search** - when a reference photo is submitted:
+**Search**
 
 ```mermaid
 flowchart TD
