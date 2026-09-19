@@ -2,7 +2,7 @@
 
 Upload a photo of someone, get back every photo in your library that they appear in.
 
-A face recognition-based photo search system built to explore the tradeoffs between managed cloud vision APIs and open-source computer vision models combining both where each one is actually the better tool for the job.
+A face-recognition photo search built to explore the tradeoff between managed cloud vision APIs and open-source computer-vision models — combining both where each is the better tool.
 
 ## How it works
 
