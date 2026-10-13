@@ -23,6 +23,7 @@ import {
   type ReviewCase,
 } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import { BAND_LABEL, bandFor } from "@/lib/limitations";
 
 type Take = { take: () => string | null };
 
@@ -134,6 +135,9 @@ function CaseDetail({ id, onChange, take }: Take & { id: string; onChange: () =>
               <div className="p-2 text-xs space-y-1 text-slate-400">
                 <div>
                   {k.score != null ? `${(k.score * 100).toFixed(1)}% similar` : "manual"} · {k.decision}
+                </div>
+                <div className={BAND_LABEL[bandFor(k.score, c.threshold)].tone}>
+                  {BAND_LABEL[bandFor(k.score, c.threshold)].label}
                 </div>
                 <div>bbox {k.bbox.join(",")}</div>
                 {open && (
