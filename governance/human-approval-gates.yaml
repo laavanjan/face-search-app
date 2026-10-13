@@ -1,0 +1,32 @@
+# Design of the human approval gates on every high-risk decision path (HUMO-02, HUMO-06, HUMO-07).
+# Implemented in backend/app/services/review.py and controls.py; verified by backend/tests/test_governance.py.
+document: human-approval-gates
+owner: "@laavanjan"
+next_review: 2027-01-14
+high_risk_decision_paths:
+  - path: indexing
+    flow: "POST /upload -> faces stored review_status=pending (not searchable) -> reviewer POST /review/photos/{id} approve -> searchable | reject -> photo + vectors deleted"
+    approver_permission: review:decide
+    fail_closed: "No decision = never searchable"
+    test: test_upload_is_pending_until_reviewer_approves
+  - path: disclosure_of_search_results
+    flow: "POST /search -> case pending_review, response has no matches -> reviewer approves/rejects each candidate -> close as completed -> requester sees approved matches only"
+    approver_permission: review:decide
+    fail_closed: "Nothing released unless status=completed and every candidate decided"
+    test: test_search_results_released_only_after_review
+  - path: deletion
+    flow: "DELETE /photos/{id} or appeal resolve action=delete_photo"
+    approver_permission: photos:delete
+  - path: configuration_change
+    flow: "Governance-sensitive setting changes -> indexing + search paused -> admin POST /admin/config/approve with change_id"
+    approver_permission: system:control
+    test: test_config_change_requires_approval
+human_controls:
+  stop_case: "POST /review/cases/{id}/close outcome=stopped - nothing ever released"
+  escalate: "outcome=escalated - held for System Owner"
+  takeover: "POST /review/cases/{id}/manual-match - human adds a match the model missed"
+  reopen: "POST /review/cases/{id}/reopen - only route back from a closed state"
+  global_stop: "POST /admin/controls pauses indexing/search; checked in routes AND inside pipeline.ingest/search before any face analysis"
+evidence_shown_to_reviewer: [reference photo, candidate photo, bounding box, detector score, quality score, similarity score, threshold applied]
+audit_fields: [timestamp, pseudonymous actor id, roles, action, target id, reason]
+separation_of_duties: "Reviewer cannot decide own upload or search"
