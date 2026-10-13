@@ -41,6 +41,13 @@ VIEWER = {"Authorization": "Bearer view-token"}
 SAM = {"Authorization": "Bearer sam-token"}
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limits():
+    from app.services import ratelimit
+
+    ratelimit.reset_for_tests()
+
+
 @pytest.fixture(scope="session")
 def client():
     with TestClient(app) as c:
