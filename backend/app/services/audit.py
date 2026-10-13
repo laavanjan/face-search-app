@@ -21,7 +21,7 @@ def record(actor: Principal, action: str, target: str | None = None, /, **detail
             "INSERT INTO audit_log (ts, actor, roles, action, target, detail) VALUES (?,?,?,?,?,?)",
             (
                 time.time(),
-                actor.name,
+                actor.ref,
                 "+".join(actor.roles),
                 action,
                 target,
