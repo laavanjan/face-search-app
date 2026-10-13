@@ -1,0 +1,40 @@
+# De-identification: methods, how they are validated, and the privacy guarantee (PRIV-08, PRIV-01).
+# Detail: docs/privacy/de-identification.md
+document: de-identification
+owner: Privacy & Incident Owner (@laavanjan, interim)
+next_review: 2027-01-14
+privacy_guarantee: >
+  None formal. No k-anonymity, l-diversity or differential-privacy guarantee is provided or claimed.
+  Face embeddings are re-identifiable biometric personal data. Protection relies on access control,
+  consent, human review, the minimisation methods below and retention limits.
+  Exposed at GET /policy as privacy_guarantee (backend/app/services/privacy.py).
+methods:
+  - name: metadata suppression
+    what: "Image decoded and re-encoded from pixels only; EXIF, GPS, camera serials, ICC and text chunks dropped before storage and before AWS"
+    code: backend/app/services/pipeline.py prepare() / _encode_clean()
+  - name: filename suppression
+    what: "Client filename never stored; random 128-bit storage id"
+    code: backend/app/services/pipeline.py ingest()
+  - name: pseudonymisation (keyed hashing)
+    what: "Staff account names replaced by HMAC-SHA256 pseudonyms in audit log, review records and vector payloads"
+    code: backend/app/services/crypto.py pseudonym()
+  - name: field encryption
+    what: "Appeal contact details encrypted with Fernet; decrypted only for appeals:manage; wiped 30 days after resolution"
+    code: backend/app/services/crypto.py encrypt()/decrypt()
+  - name: generalisation
+    what: "Images downscaled to <= 1600 px"
+  - name: masking in logs
+    what: "Photo/face ids, filenames, emails, URLs, tokens and last IPv4 octet masked in every log line"
+    code: backend/app/logging_setup.py
+  - name: attribute non-inference
+    what: "Age/gender models not loaded (allowed_modules detection+recognition)"
+validation:
+  method: "Automated tests on synthetic fixtures; run with: cd backend && pytest"
+  tests:
+    - {test: tests/test_pipeline.py::test_metadata_stripped_and_filename_not_stored, criterion: "Stored and AWS-bound bytes have no EXIF and no camera string; payload has no filename"}
+    - {test: tests/test_governance.py::test_records_store_pseudonyms_not_names, criterion: "No account name appears anywhere in the governance database"}
+    - {test: tests/test_governance.py::test_appeal_contact_encrypted_and_expires, criterion: "Plaintext contact absent from DB; wiped after retention"}
+    - {test: tests/test_governance.py::test_logs_redact_personal_data, criterion: "No id, IP, email, filename or token in log output"}
+    - {test: tests/test_governance.py::test_delete_endpoint_removes_file_and_vectors, criterion: "Image and every vector removed"}
+  frequency: "Every pull request (CI) and weekly (governance-monitoring workflow)"
+  limitation: "Validates the de-identification controls, not face-matching accuracy"
