@@ -1,0 +1,71 @@
+# Field inventory (PRIV-01): every stored field, why it exists, who uses it.
+# "purpose | consumer". Retention: governance/data-retention-policy.yaml.
+# tests/test_governance.py::test_schema_matches_data_inventory fails on any undocumented column.
+document: data-inventory
+owner: "@laavanjan"
+next_review: 2027-01-14
+sqlite:
+  audit_log:
+    id: "row key | audit.recent"
+    ts: "when | retention sweep, audit view"
+    actor: "HMAC pseudonym, never a name; accountability"
+    roles: "role at the time; accountability"
+    action: "event name | audit filter"
+    target: "opaque case/photo/appeal id"
+    detail: "structured context; no images/embeddings/contacts"
+    trace_id: "request trace id (TRAN-05)"
+    rationale: "structured rationale (TRAN-06)"
+  review_cases:
+    id: "case key | review, search"
+    created_at: "age | 30-day sweep"
+    requested_by: "requester pseudonym | access + separation of duties"
+    status: "workflow state | release gate"
+    threshold: "floor applied | explanation"
+    query_faces: "faces found in query | reviewer context"
+    query_image: "biometric image; nulled when case closes | reviewer"
+    query_media_type: "MIME for query_image | serving"
+    closed_by: pseudonym
+    closed_at: time
+    close_reason: reason
+  review_candidates:
+    case_id: "parent case | joins"
+    face_id: "candidate face | decision target"
+    photo_id: "candidate photo | release, deletion cascade"
+    score: "similarity | explanation, band"
+    bbox: "face box | reviewer evidence"
+    source: "model or human | explanation"
+    decision: "pending/approve/reject | release gate"
+    decided_by: pseudonym
+    decided_at: time
+    reason: reason
+  appeals:
+    id: "appeal key | recourse"
+    created_at: "SLA start | SLA"
+    category: "appeal type | routing"
+    photo_id: "photo to restrict/delete | recourse action"
+    face_id: "disputed face | reviewer context"
+    case_id: "disputed case | reviewer context"
+    reason: "appellant statement | decision"
+    contact: "encrypted, optional; wiped 30d after resolution | reply"
+    status: "workflow state | SLA tracking"
+    access_hash: "sha256 of appellant token | subject-scoped status lookup"
+    ack_by: "SLA deadline | overdue flag"
+    resolve_by: "SLA deadline | overdue flag"
+    outcome: "upheld/partial/rejected | appellant view"
+    resolution: "explanation to appellant | appellant view"
+    resolved_by: pseudonym
+    resolved_at: "time | retention"
+  controls:
+    key: "switch name | ensure_allowed"
+    value: "on/off | ensure_allowed"
+    updated_by: pseudonym
+    updated_at: time
+    reason: reason
+  config_baselines:
+    fingerprint: "settings hash | config gate"
+    snapshot: "approved settings, no secrets | approval diff"
+    change_id: "change record id | traceability"
+    approved_by: pseudonym
+    approved_at: time
+qdrant_payload: [photo_id, bbox, det_score, quality, review_status, indexed_at, uploaded_by, model]
+not_collected: [filenames, EXIF/GPS, names, emails of staff, inferred demographics]
