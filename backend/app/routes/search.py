@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from app.config import get_settings
 from app.models.schemas import BoundingBox, SearchCaseResponse, SearchMatch
-from app.routes.common import pipeline_error, read_image
+from app.routes.common import CaseId, pipeline_error, read_image
 from app.security import Principal, current_principal, require_permissions
-from app.services import controls, pipeline, privacy, review, storage
+from app.services import controls, explain, pipeline, privacy, provenance, review, storage
 
 router = APIRouter()
 
@@ -12,8 +12,8 @@ router = APIRouter()
 @router.post("/search", response_model=SearchCaseResponse)
 async def search(
     file: UploadFile = File(...),
-    limit: int = Form(20),
-    threshold: float = Form(0.35),
+    limit: int = Form(20, ge=1, le=200),
+    threshold: float = Form(0.35, ge=0.0, le=1.0),
     consent: bool = Form(False),
     p: Principal = Depends(require_permissions("photos:search")),
 ):
@@ -42,14 +42,13 @@ async def search(
 
 
 @router.get("/search/cases/{case_id}", response_model=SearchCaseResponse)
-def search_case(case_id: str, p: Principal = Depends(current_principal)):
+def search_case(case_id: CaseId, p: Principal = Depends(current_principal)):
     r = review.released_matches(case_id, p)
-    return SearchCaseResponse(
-        case_id=r["case_id"],
-        status=r["status"],
-        query_faces=r["query_faces"],
-        threshold_applied=r["threshold_applied"],
-        matches=[
+    th = r["threshold_applied"]
+    matches = []
+    for m in r["matches"]:
+        band = explain.confidence_band(m["score"], th)
+        matches.append(
             SearchMatch(
                 photo_id=m["photo_id"],
                 face_id=m["face_id"],
@@ -58,7 +57,31 @@ def search_case(case_id: str, p: Principal = Depends(current_principal)):
                 bbox=BoundingBox(x=m["bbox"][0], y=m["bbox"][1], w=m["bbox"][2], h=m["bbox"][3]),
                 source=m["source"],
                 reviewed_by=m["decided_by"],
+                confidence_band=band,
+                band_meaning=explain.BAND_MEANING[band],
             )
-            for m in r["matches"]
-        ],
+        )
+    body = {"case_id": case_id, "status": r["status"], "matches": [m.model_dump() for m in matches]}
+    return SearchCaseResponse(
+        case_id=r["case_id"],
+        status=r["status"],
+        query_faces=r["query_faces"],
+        threshold_applied=th,
+        matches=matches,
+        limitations=explain.CAVEATS,
+        provenance=provenance.stamp(body, subject=f"case:{case_id}", human_reviewed=r["status"] == "completed"),
     )
+
+
+@router.get("/search/cases/{case_id}/explain")
+def explain_case(case_id: CaseId, p: Principal = Depends(current_principal)):
+    """Why each released match was proposed (TRAN-03). Released matches only."""
+    r = review.released_matches(case_id, p)
+    return {
+        "case_id": case_id,
+        "status": r["status"],
+        "approach": "evidence-based: similarity, threshold margin, confidence band, detector/quality scores, human decision",
+        "explanations": [
+            explain.explain_candidate(m, r["threshold_applied"], explain.face_for(m)) for m in r["matches"]
+        ],
+    }
