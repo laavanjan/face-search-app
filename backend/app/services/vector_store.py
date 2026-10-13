@@ -7,7 +7,7 @@ Payload allowlist (data minimisation - every field has a consumer):
   det_score      reviewer evidence
   quality        reviewer evidence / ranking
   review_status  human-oversight gate: only "approved" faces are searchable
-  indexed_at     retention TTL (docs/privacy/data-retention-policy.md)
+  indexed_at     retention TTL (governance/data-retention-policy.yaml)
   uploaded_by    separation of duties (uploader cannot approve own upload)
   model          ties the embedding to the model that produced it (re-index on change)
 No filenames, EXIF or free text are stored.
