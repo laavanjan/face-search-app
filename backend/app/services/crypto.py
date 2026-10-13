@@ -38,6 +38,11 @@ def _subkey(label: str) -> bytes:
     return hmac.new(master, label.encode(), hashlib.sha256).digest()
 
 
+def mac(label: str, data: bytes) -> str:
+    """HMAC-SHA256 under a purpose-specific sub-key (e.g. provenance signatures)."""
+    return hmac.new(_subkey(label), data, hashlib.sha256).hexdigest()
+
+
 def pseudonym(name: str) -> str:
     return "u_" + hmac.new(_subkey("audit-pseudonym"), name.encode(), hashlib.sha256).hexdigest()[:16]
 
