@@ -1,0 +1,25 @@
+# Bias mitigation trade-offs (FAIR-04). Experiment: backend/scripts/fairness_mitigation_experiment.py
+# Results: governance/evidence/fairness-mitigation.json. Related risk: ethical-impacts.yaml rank 3 (R-03).
+document: fairness-mitigation-tradeoffs
+owner: "@laavanjan"
+assessed: 2026-10-14
+next_review: 2027-01-14
+evidence_status: "SYNTHETIC DEMO ONLY - numbers below exercise the method, they do not describe buffalo_l"
+mitigation_evaluated:
+  name: group-blind threshold selection
+  library: fairlearn MetricFrame (per-group FMR/FNMR), app/services/fairness.py
+  method: "Sweep one global similarity threshold 0.25-0.60; pick the lowest worst-group FMR with every group's FNMR <= 0.05"
+  rejected_alternative: "Per-group thresholds (fairlearn ThresholdOptimizer) - needs protected attributes at search time, i.e. inferring them from faces, which is prohibited"
+synthetic_demo_result:
+  current_threshold: {threshold: 0.35, worst_group_fnmr: 0.167, overall_fnmr: 0.062, worst_group_fmr: 0.0}
+  candidate_threshold: {threshold: 0.25, worst_group_fnmr: 0.0, overall_fnmr: 0.0, worst_group_fmr: 0.0}
+tradeoffs:
+  - "Lowering the threshold reduces missed matches for the worst-served group, but raises false matches for everyone on real data (synthetic impostors are near-orthogonal, so FMR=0 here is not informative)"
+  - "More candidates per search -> more human-review workload and more exposure of non-matching people's photos to reviewers"
+  - "A threshold below the governed floor (0.35) is a material change: needs an 'accept' result on real consented data and config approval"
+  - "Human review of every match reduces disclosure harm but does not equalise model error rates"
+  - "Small groups give wide confidence intervals; results are only actionable above the minimum pair counts"
+decision: iterate                 # accept | reject | iterate
+decision_rationale: "Keep the 0.35 floor. Re-run on the consented evaluation set before any change."
+decided_by: "@laavanjan"
+decided_on: 2026-10-14
