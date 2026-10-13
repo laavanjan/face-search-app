@@ -1,0 +1,31 @@
+# Change management + re-evaluation policy (GOV-08, GOV-09). Detail: docs/governance/change-management.md
+document: change-management
+owner: "@laavanjan"
+next_review: 2027-01-14
+versioning: "Semantic versioning; API version in backend/app/main.py; every deployment tagged vX.Y.Z; each embedding records its model"
+reevaluate_before_release_when:
+  model_changes:
+    triggers:
+      - "FACE_MODEL_NAME, FACE_DET_SIZE, insightface/onnxruntime version, embedding dimension"
+      - "MIN_DET_SCORE, MIN_FACE_SIZE, SEARCH_MIN_THRESHOLD"
+      - "Rekognition quality blend enabled/disabled"
+    required_evidence: "False-match / false-non-match rates on an evaluation set (overall and by group), approver, rollback plan, re-indexing plan"
+  data_changes:
+    triggers:
+      - "Preprocessing in pipeline.py (EXIF transpose, resize, re-encode)"
+      - "Sources of indexed photos, stored payload fields, evaluation dataset or labelling rules"
+      - "Retention periods or legal basis"
+    required_evidence: "Versioned dataset manifest (source, consent status, counts, hashes) + accuracy, bias and privacy assessment"
+  deployment_changes:
+    triggers:
+      - "Hosting/runtime (Docker image, Lambda), Qdrant location, S3 bucket or AWS region"
+      - "ALLOWED_ORIGINS, public exposure, authentication / API_KEYS structure"
+    required_evidence: "Config version, environment, smoke test with /health config_approved=true, approver, rollback plan"
+  serious_incidents: "Every P0, and P1 touching a review gate or personal data - see governance/incident-response.yaml"
+enforcement:
+  runtime_gate: "backend/app/services/controls.py fingerprints governance-sensitive settings; indexing and search fail closed (503) until POST /admin/config/approve with a change_id"
+  tested_by: "backend/tests/test_governance.py::test_config_change_requires_approval"
+  ci_gate: ".github/workflows/ci.yml job change-record fails a PR touching sensitive files without docs/changes/CHG-*.md"
+  review_gate: ".github/workflows/ci.yml job codeowner-approval + .github/CODEOWNERS"
+  audit: "Approval written to audit_log as config.approve with change_id"
+change_record_template: docs/changes/TEMPLATE.md
