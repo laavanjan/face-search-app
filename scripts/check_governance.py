@@ -60,7 +60,45 @@ REQUIRED_RECORDS: dict[str, list[str]] = {
     "de-identification.yaml": ["owner", "privacy_guarantee", "methods", "validation"],
     "model-training-data.yaml": ["owner", "model", "licences", "permitted_use", "prohibited_use"],
     "synthetic-data-bias-assessment.yaml": ["owner", "sources", "bias_assessment", "limitations_disclosed"],
+    "data-inventory.yaml": ["owner", "sqlite", "qdrant_payload"],
+    "fairness-thresholds.yaml": ["owner", "parity_metric", "groups", "limits", "outcomes"],
+    "fairness-test-plan.yaml": ["owner", "groups_to_test", "metrics", "numeric_thresholds", "procedure"],
+    "fairness-mitigation-tradeoffs.yaml": ["owner", "mitigation_evaluated", "tradeoffs", "decision"],
+    "model-card.yaml": ["owner", "model", "system_description", "assumptions", "intended_use", "prohibited_use"],
+    "system-limitations.yaml": ["owner", "failure_modes", "uncertainty_signals", "user_facing_text"],
+    "explainability.yaml": ["owner", "approach", "endpoints", "why_this_fits"],
+    "safety-requirements.yaml": ["owner", "requirements", "input_validation_by_endpoint"],
+    "red-team-report.yaml": ["owner", "scenarios", "open_findings"],
+    "robustness-evaluation.yaml": ["owner", "shifts_evaluated", "results", "interpretation"],
+    "appeals-recourse.yaml": ["owner", "endpoints", "timeline", "outcome_handling"],
+    "privacy-notice.yaml": ["owner", "ai_disclosure", "how_data_is_used", "legal_basis"],
+    "decision-log-schema.yaml": ["owner", "columns", "rationale_fields", "decision_paths_logged"],
+    "provenance.yaml": ["owner", "marked_outputs", "provenance_fields"],
 }
+
+# FAIR-03: the fairness result must hold numeric metrics and a valid outcome.
+FAIRNESS_RESULT = ROOT / "governance" / "evidence" / "fairness-results.json"
+
+
+def fairness_result_problems() -> list[str]:
+    import json
+
+    if not FAIRNESS_RESULT.exists():
+        return ["missing governance/evidence/fairness-results.json"]
+    r = json.loads(FAIRNESS_RESULT.read_text(encoding="utf-8"))
+    bad = []
+    if r.get("outcome") not in {"accept", "reject", "iterate"}:
+        bad.append("fairness-results.json: outcome must be accept|reject|iterate")
+    if not r.get("interpretation"):
+        bad.append("fairness-results.json: missing interpretation")
+    for attr, rows in (r.get("by_group") or {}).items():
+        for row in rows:
+            if not all(isinstance(row.get(k), (int, float)) for k in ("fmr", "fnmr", "genuine", "impostor")):
+                bad.append(f"fairness-results.json: non-numeric metrics for {attr}")
+                break
+    if not r.get("by_group"):
+        bad.append("fairness-results.json: no per-group metrics")
+    return bad
 
 
 def record_problems(today: dt.date) -> list[str]:
@@ -90,6 +128,7 @@ def main() -> int:
     problems = [f"missing artefact: {p}" for p in sorted(declared_paths()) if not (ROOT / p).exists()]
     problems += overdue_reviews(dt.date.today())
     problems += record_problems(dt.date.today())
+    problems += fairness_result_problems()
     for p in problems:
         print(f"::error::{p}")
     print(f"governance check: {len(problems)} problem(s)")
