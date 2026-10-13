@@ -3,6 +3,9 @@ operator controls and approved configuration baselines.
 
 Kept separate from Qdrant so oversight records survive a re-index and can be
 retained/purged on their own schedule (governance/data-retention-policy.yaml).
+Every column, its reader/writer and its retention is listed in
+governance/data-inventory.yaml; tests/test_governance.py fails on any column
+missing from that inventory.
 """
 from __future__ import annotations
 
@@ -24,7 +27,9 @@ CREATE TABLE IF NOT EXISTS audit_log (
     roles TEXT NOT NULL,
     action TEXT NOT NULL,
     target TEXT,
-    detail TEXT
+    detail TEXT,
+    trace_id TEXT,
+    rationale TEXT
 );
 CREATE INDEX IF NOT EXISTS ix_audit_ts ON audit_log(ts);
 
@@ -66,6 +71,7 @@ CREATE TABLE IF NOT EXISTS appeals (
     reason TEXT NOT NULL,
     contact TEXT,
     status TEXT NOT NULL,
+    access_hash TEXT,
     ack_by REAL NOT NULL,
     resolve_by REAL NOT NULL,
     outcome TEXT,
@@ -99,8 +105,31 @@ def _connect() -> sqlite3.Connection:
         c.row_factory = sqlite3.Row
         c.execute("PRAGMA foreign_keys = ON")
         c.executescript(SCHEMA)
+        _migrate(c)
         _conn = c
     return _conn
+
+
+# Columns added after the first release: (table, column, type).
+_ADDED_COLUMNS = [
+    ("audit_log", "trace_id", "TEXT"),
+    ("audit_log", "rationale", "TEXT"),
+    ("appeals", "access_hash", "TEXT"),
+]
+
+
+def _migrate(c: sqlite3.Connection) -> None:
+    for table, col, typ in _ADDED_COLUMNS:
+        cols = {r[1] for r in c.execute(f"PRAGMA table_info({table})")}
+        if col not in cols:
+            c.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
+    c.commit()
+
+
+def columns() -> dict[str, list[str]]:
+    with tx() as c:
+        tables = [r[0] for r in c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'")]
+        return {t: [r[1] for r in c.execute(f"PRAGMA table_info({t})")] for t in tables}
 
 
 @contextmanager
