@@ -1,0 +1,29 @@
+# Decision log schema (TRAN-05, TRAN-06). Table audit_log in backend/app/services/db.py,
+# written by backend/app/services/audit.py on every decision path.
+document: decision-log-schema
+owner: "@laavanjan"
+next_review: 2027-01-14
+columns:
+  ts: "epoch seconds"
+  actor: "HMAC pseudonym of the person (or system/anonymous)"
+  roles: "roles held when acting"
+  action: "event name, e.g. search.candidate.approve"
+  target: "case/photo/appeal id"
+  trace_id: "request trace id from app/tracing.py (X-Request-ID)"
+  rationale: "structured JSON - see rationale_fields"
+  detail: "small extra context"
+rationale_fields:
+  decision: "outcome, e.g. approve | reject | pending_review | completed | stopped | delete | pause"
+  reason: "the human's stated reason (required for human decisions)"
+  evidence: "inputs used: candidate scores, face ids, det/quality scores, change_id, settings diff"
+  model: "FACE_MODEL_NAME in force"
+  threshold: "SEARCH_MIN_THRESHOLD in force"
+  config_fingerprint: "hash of governance-sensitive settings in force"
+decision_paths_logged:
+  - "photo.upload (pending/approved), index.approve, index.reject"
+  - "search.case_created (with every candidate score), search.candidate.approve|reject|reopen, search.manual_match"
+  - "search.case.completed|no_match|stopped|escalated, search.case.reopen"
+  - "appeal.submit, appeal.resolve"
+  - "control.indexing|search.pause|resume, config.approve, photo.delete, retention.sweep"
+reconstruction: "Given a case id: case_created evidence lists candidates and scores; each candidate decision has reviewer, reason and score; the close row lists approved/rejected ids; config_fingerprint + model + threshold identify the configuration"
+verification: backend/tests/test_transparency.py::test_decisions_logged_with_trace_and_structured_rationale
