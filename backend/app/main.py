@@ -12,6 +12,7 @@ from app.logging_setup import configure_logging
 from app.models.schemas import HealthResponse
 from app.routes import admin, appeals, photos, review, search, upload
 from app.security import Principal, configured_principals, current_principal, optional_principal
+from app.tracing import TraceMiddleware
 from app.services import controls, crypto, face_engine, privacy, retention, storage, vector_store
 
 configure_logging()
@@ -67,13 +68,16 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Added last = outermost: every request gets a trace ID before anything else runs.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins or ["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["X-Request-ID"],
 )
+app.add_middleware(TraceMiddleware)  # TRAN-05: trace ID at the entry point
 
 # Authentication is the default for every data-bearing router; each route then
 # adds its specific permission. Only meta routes and the two appeal routes
