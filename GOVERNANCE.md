@@ -10,6 +10,7 @@
 | Next review | 2027-01-14 |
 
 Index of every governance artefact and the control it satisfies: [docs/README.md](docs/README.md).
+Machine-readable versions of the key policies live in [`governance/`](governance/) and are validated in CI.
 
 ## 1. Purpose
 
@@ -69,7 +70,9 @@ Code-level gates:
 
 ## 5. Change approval
 
-- `.github/CODEOWNERS` assigns every path to @laavanjan. On the GitHub repository, enable branch protection on `main`: require a pull request, 1 approving review, **review from Code Owners**, and passing `CI` checks. *(Repository settings - must be switched on by the owner; it cannot be set from the code.)*
+- `.github/CODEOWNERS` assigns every path to @laavanjan.
+- **Enforced in CI**: the `codeowner-approval` job (`.github/workflows/ci.yml`) fails any pull request that a code owner neither authored nor approved.
+- Branch protection for `main` is declared in `.github/settings.yml` (require PR, 1 approval, Code Owner review, and the CI checks including `codeowner-approval`). It is applied by the Settings GitHub App, or by hand in GitHub settings.
 - CI (`.github/workflows/ci.yml`) fails a pull request that changes governance-sensitive files without adding a change record in `docs/changes/`.
 - Policy: [docs/governance/change-management.md](docs/governance/change-management.md).
 
