@@ -1,0 +1,20 @@
+# Distribution-shift / robustness evaluation (SAFE-03).
+document: robustness-evaluation
+owner: "@laavanjan"
+next_review: 2027-01-14
+script: backend/scripts/evaluate_robustness.py
+ood_tests: backend/tests/test_robustness.py
+shifts_evaluated: [blur, low_light, over_exposed, jpeg_q15, downscale_25pct, rotate_20deg, occlusion, grayscale, sensor_noise]
+ood_input_cases: [grayscale PNG, RGBA PNG, palette PNG, CMYK JPEG, 16-bit PNG, WebP, 4000x10 aspect, 1x1 image, 5000x3000 image, EXIF-rotated JPEG, truncated/garbage bytes, decompression bomb]
+results:
+  preprocessing:
+    run: 2026-10-14
+    data: "synthetic random-pixel images (12)"
+    outcome: "100% of shifted inputs normalised to clean 3-channel images; every malformed input rejected with a 400/422, none crashed"
+    evidence: governance/evidence/robustness-results.json
+  model:
+    status: "not yet run - needs consented face photos and InsightFace"   # PLACEHOLDER
+    metrics: [detection_rate, identity_stable_rate, mean_similarity_to_original]
+    acceptance: "identity_stable_rate >= 0.90 for blur, jpeg_q15, low_light; failures documented as limitations"
+interpretation: "The pipeline is robust to format and quality shifts at the input layer. Model behaviour under shift is unmeasured; known weak conditions (blur, occlusion, low light) are disclosed in governance/system-limitations.yaml and the confidence band warns reviewers."
+outcome: iterate
