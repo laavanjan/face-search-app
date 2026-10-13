@@ -1,0 +1,42 @@
+# Incident response policy - Face Search (GOV-06, GOV-09). Full runbook: docs/governance/incident-response.md
+document: incident-response
+owner: "@laavanjan"            # System Owner, incident commander
+next_review: 2027-01-14
+severity_levels:
+  P0:
+    name: critical
+    criteria: "Exposure, loss or unauthorised use of face photos, embeddings or appeal contacts; a wrong match acted on with harm"
+    acknowledge_within: 1h
+    contain_within: 4h
+  P1:
+    name: major
+    criteria: "Upload or search down for all users; Qdrant unavailable; human-review gate bypassed; retention sweep failing > 24h; AWS failing when enabled"
+    acknowledge_within: 4h
+    fix_within: 1 business day
+  P2:
+    name: minor
+    criteria: "Degraded detector quality, 504 timeouts, monitoring run failing, health display wrong"
+    acknowledge_within: 2 business days
+    fix_within: next release
+escalation_contacts:            # by severity; channels, not personal phone numbers
+  P0:
+    - {role: System Owner, contact: "@laavanjan", channel: "GitHub private security advisory"}
+    - {role: Privacy & Incident Owner (backup), contact: "@face-search-backup", channel: "security@face-search.example"}  # PLACEHOLDER - replace before production
+  P1:
+    - {role: System Owner, contact: "@laavanjan", channel: "GitHub issue labels: incident, P1"}
+    - {role: Human Reviewer, contact: "@laavanjan (interim)", channel: "GitHub issue"}
+  P2:
+    - {role: Human Reviewer, contact: "@laavanjan (interim)", channel: "GitHub issue labels: incident, P2"}
+    - {role: System Owner, contact: "@laavanjan", channel: "weekly governance-review issue"}
+runbook:
+  detect: ["GET /health (status, indexing_paused, search_paused, config_approved)", "GET /admin/audit", "weekly governance-monitoring workflow"]
+  contain: "POST /admin/controls {indexing_paused: true, search_paused: true} - refuses all face processing (backend/app/services/controls.py)"
+  recover: ["restore Qdrant / photo volumes from backup", "redeploy previous tagged image", "rotate API_KEYS / QDRANT_API_KEY if leaked"]
+  communicate: "P0 with personal data: notify affected people; assess regulator notice (GDPR 72h)"
+  post_incident_review: "within 5 business days of P0/P1; regression test in backend/tests/"
+serious_incident_reevaluation:  # GOV-09 condition 4
+  applies_to: [P0, "P1 involving a review gate or personal data"]
+  steps:
+    - "Pause affected processing via /admin/controls until re-evaluation is complete"
+    - "Re-evaluate model, thresholds and review gates; record result in docs/changes/CHG-*.md"
+    - "System Owner approves resumption; approval recorded in the audit log"
