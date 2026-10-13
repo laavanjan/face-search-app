@@ -8,7 +8,9 @@ import pytest
 
 from app.config import get_settings
 from app.logging_setup import RedactingFilter, redact
-from app.services import resilience, retention, storage, vector_store
+from app.main import app
+from app.security import _key_entries
+from app.services import db, pipeline, resilience, retention, storage, vector_store
 from tests.conftest import ADMIN, OPERATOR, REVIEWER, SAM, VIEWER
 from tests.fixtures.synthetic_faces import synthetic_face, synthetic_png
 
@@ -145,7 +147,9 @@ def test_search_results_released_only_after_review(client):
     out = client.get(f"/search/cases/{case}", headers=OPERATOR).json()
     assert out["status"] == "completed"
     assert [m["photo_id"] for m in out["matches"]] == [pid]
-    assert out["matches"][0]["reviewed_by"] == "rita"
+    # Stored and returned as a pseudonym, never the reviewer's account name.
+    assert out["matches"][0]["reviewed_by"] == client.get("/auth/me", headers=REVIEWER).json()["ref"]
+    assert out["matches"][0]["reviewed_by"] != "rita"
     # Query image is dropped once the case closes.
     assert client.get(f"/review/cases/{case}/query-image", headers=REVIEWER).status_code == 404
 
@@ -305,3 +309,83 @@ def test_retry_only_transient(monkeypatch):
     with pytest.raises(ValueError):
         resilience.retry(bad, op="t", attempts=3)
     assert calls["n"] == 1
+
+
+# --- PRIV-05: auth is the default on every route ---------------------------------
+
+PUBLIC_ROUTES = {
+    ("GET", "/"), ("GET", "/health"), ("GET", "/policy"),
+    ("POST", "/appeals"), ("GET", "/appeals/{appeal_id}"),
+}
+
+
+def test_every_route_requires_auth_except_allowlist(client):
+    checked = 0
+    for route in app.routes:
+        path = getattr(route, "path", "")
+        if not hasattr(route, "methods") or path.startswith(("/docs", "/openapi", "/redoc")):
+            continue
+        for method in route.methods - {"HEAD", "OPTIONS"}:
+            if (method, path) in PUBLIC_ROUTES:
+                continue
+            url = path.replace("{photo_id}", "a" * 32 + ".jpg").replace("{case_id}", "x").replace(
+                "{face_id}", "y").replace("{appeal_id}", "z")
+            r = client.request(method, url)
+            assert r.status_code == 401, (method, path, r.status_code)
+            checked += 1
+    assert checked >= 20
+
+
+def test_role_bundles_need_allowlist_and_production_needs_hashed_tokens():
+    assert _key_entries("x:admin+reviewer:t", "", "development") == ()
+    assert len(_key_entries("x:operator+reviewer:t", "operator+reviewer", "development")) == 1
+    assert _key_entries("x:viewer:raw-token", "", "production") == ()
+    assert len(_key_entries("x:viewer:sha256:" + "0" * 64, "", "production")) == 1
+
+
+# --- PRIV-01: no names or plaintext contacts in stored records -------------------
+
+
+def _db_dump() -> str:
+    with db.tx() as c:
+        return "\n".join(c.iterdump())
+
+
+def test_records_store_pseudonyms_not_names(client):
+    pid = _approved_photo(client, 701)
+    _search(client, 701)
+    dump = _db_dump()
+    for name in ("olivia", "rita", "adam"):
+        assert name not in dump
+    assert all(not f["uploaded_by"].startswith("olivia") for f in vector_store.faces_for_photo(pid))
+
+
+def test_appeal_contact_encrypted_and_expires(client):
+    a = client.post("/appeals", json={"category": "other", "reason": "Please call me back about this.", "contact": "Person@Example.org"}).json()
+    assert "person@example.org" not in _db_dump()
+    queue = client.get("/appeals", headers=REVIEWER).json()["items"]
+    assert any(x["id"] == a["id"] and x["contact"] == "person@example.org" for x in queue)
+    assert client.post("/appeals", json={"category": "other", "reason": "Bad contact value here.", "contact": "not a contact"}).status_code == 422
+    client.post(f"/appeals/{a['id']}/resolve", json={"outcome": "rejected", "resolution": "No action"}, headers=REVIEWER)
+    retention.purge_expired(now=time.time() + 31 * 86400)
+    with db.tx() as c:
+        row = c.execute("SELECT contact FROM appeals WHERE id = ?", (a["id"],)).fetchone()
+    assert row is None or row["contact"] is None
+
+
+# --- HUMO-02: intervention enforced inside the pipeline itself -------------------
+
+
+def test_pipeline_refuses_when_paused(client):
+    client.post("/admin/controls", json={"indexing_paused": True, "search_paused": True, "reason": "drill"}, headers=ADMIN)
+    try:
+        with patch("app.services.face_engine.analyze") as det:
+            with pytest.raises(Exception) as e1:
+                pipeline.ingest(synthetic_png(), uploaded_by="x")
+            with pytest.raises(Exception) as e2:
+                pipeline.search(synthetic_png())
+            det.assert_not_called()
+        assert getattr(e1.value, "status_code", None) == 503
+        assert getattr(e2.value, "status_code", None) == 503
+    finally:
+        client.post("/admin/controls", json={"indexing_paused": False, "search_paused": False, "reason": "drill over"}, headers=ADMIN)
