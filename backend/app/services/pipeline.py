@@ -1,34 +1,79 @@
-"""End-to-end orchestration: bytes -> detect -> embed -> store."""
+"""End-to-end orchestration: bytes -> sanitize -> detect -> embed -> store.
+
+Data scope (docs/privacy/privacy-and-ai-use.md):
+  in : one image (JPEG/PNG/WebP, <= 15 MB)
+  out: the re-encoded image (EXIF/GPS/device metadata stripped, <= MAX_DIM px)
+       + one 512-d embedding, bbox and quality scores per qualifying face.
+The original upload bytes and filename are never persisted or sent to AWS.
+"""
 from __future__ import annotations
 
 import io
 import logging
+import time
 import uuid
 
 import cv2
 import numpy as np
 from PIL import Image, ImageOps
 
+from app.config import get_settings
 from app.models.schemas import BoundingBox, FaceRecord
-from app.services import face_engine, rekognition, storage, vector_store
+from app.services import face_engine, rekognition, resilience, storage, vector_store
 
 log = logging.getLogger(__name__)
 
 MAX_DIM = 1600
+# PNG text chunk set by tests/fixtures/synthetic_faces.py. Production rejects
+# such images so synthetic fixtures can never land in the real stores.
+SYNTHETIC_MARKER = "fsa-synthetic"
 
 
-def _decode(data: bytes) -> np.ndarray:
-    img = Image.open(io.BytesIO(data))
+def _normalize(img: Image.Image) -> Image.Image:
     img = ImageOps.exif_transpose(img).convert("RGB")
     if max(img.size) > MAX_DIM:
         img.thumbnail((MAX_DIM, MAX_DIM))
-    arr = np.array(img)
-    return cv2.cvtColor(arr, cv2.COLOR_RGB2BGR)
+    return img
 
 
-def _cross_check_with_rekognition(bgr: np.ndarray, data: bytes) -> dict[int, float]:
+def _encode_clean(img: Image.Image, src_format: str | None) -> tuple[bytes, str]:
+    """Re-encode pixels only. No exif/icc/text chunks are carried over."""
+    buf = io.BytesIO()
+    if src_format == "PNG":
+        img.save(buf, format="PNG")
+        return buf.getvalue(), "png"
+    img.save(buf, format="JPEG", quality=92)
+    return buf.getvalue(), "jpg"
+
+
+def prepare(data: bytes) -> tuple[np.ndarray, bytes, str]:
+    """Validate + sanitize an upload. Returns (bgr, clean_bytes, ext)."""
+    try:
+        img = Image.open(io.BytesIO(data))
+        img.load()
+    except Exception as e:  # noqa: BLE001
+        raise ValueError("invalid_image") from e
+    if str(img.info.get(SYNTHETIC_MARKER, "")).lower() == "true" and not get_settings().synthetic_data_enabled:
+        raise ValueError("synthetic_data_rejected")
+    src_format = img.format
+    rgb = _normalize(img)
+    clean, ext = _encode_clean(rgb, src_format)
+    bgr = cv2.cvtColor(np.array(rgb), cv2.COLOR_RGB2BGR)
+    return bgr, clean, ext
+
+
+def _detect(bgr: np.ndarray) -> list[face_engine.DetectedFace]:
+    return resilience.run_with_deadline(
+        face_engine.analyze,
+        bgr,
+        timeout=get_settings().inference_timeout_seconds,
+        op="face_engine.analyze",
+    )
+
+
+def _cross_check_with_rekognition(bgr: np.ndarray, clean: bytes) -> dict[int, float]:
     """Boost quality scores when Rekognition confirms a face at the same location."""
-    rek = rekognition.detect_faces(data)
+    rek = rekognition.detect_faces(clean)
     if not rek:
         return {}
     h, w = bgr.shape[:2]
@@ -40,19 +85,21 @@ def _cross_check_with_rekognition(bgr: np.ndarray, data: bytes) -> dict[int, flo
     return boosts
 
 
-def ingest(data: bytes, filename: str) -> tuple[str, str, list[FaceRecord]]:
-    bgr = _decode(data)
-    faces = face_engine.analyze(bgr)
+def ingest(data: bytes, *, uploaded_by: str) -> tuple[str, str, list[FaceRecord], str]:
+    """Index every qualifying face. Faces start as `pending` (excluded from
+    search) unless REQUIRE_INDEX_REVIEW is off."""
+    s = get_settings()
+    bgr, clean, ext = prepare(data)
+    faces = _detect(bgr)
     if not faces:
         raise ValueError("no_face_detected")
 
-    rek_boost = _cross_check_with_rekognition(bgr, data)
-    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "jpg"
-    if ext not in {"jpg", "jpeg", "png", "webp"}:
-        ext = "jpg"
+    rek_boost = _cross_check_with_rekognition(bgr, clean)
     photo_id = f"{uuid.uuid4().hex}.{ext}"
-    storage.save(photo_id, data, content_type=f"image/{ext}")
+    storage.save(photo_id, clean, content_type="image/png" if ext == "png" else "image/jpeg")
 
+    status = vector_store.PENDING if s.require_index_review else vector_store.APPROVED
+    now = time.time()
     records: list[FaceRecord] = []
     for i, f in enumerate(faces):
         q = f.quality
@@ -66,7 +113,9 @@ def ingest(data: bytes, filename: str) -> tuple[str, str, list[FaceRecord]]:
             bbox=f.bbox,
             det_score=f.det_score,
             quality=q,
-            filename=filename,
+            review_status=status,
+            indexed_at=now,
+            uploaded_by=uploaded_by,
         )
         x, y, w, h = f.bbox
         records.append(
@@ -78,16 +127,19 @@ def ingest(data: bytes, filename: str) -> tuple[str, str, list[FaceRecord]]:
                 quality=q,
             )
         )
-    return photo_id, storage.public_url(photo_id), records
+    log.info("photo_indexed faces=%d status=%s", len(records), status)
+    return photo_id, storage.public_url(photo_id), records, status
 
 
-def search(data: bytes, limit: int = 20):
-    bgr = _decode(data)
-    faces = face_engine.analyze(bgr)
+def search(data: bytes, limit: int = 20, threshold: float = 0.35):
+    """Returns (faces, hits, clean_query_bytes, ext). Hits are candidates
+    only; they are released after human review (app/services/review.py)."""
+    bgr, clean, ext = prepare(data)
+    faces = _detect(bgr)
     if not faces:
         raise ValueError("no_face_detected")
     # Use the largest / highest-confidence face as the query.
     faces.sort(key=lambda f: f.det_score * (f.bbox[2] * f.bbox[3]), reverse=True)
     q = faces[0]
-    hits = vector_store.search(q.embedding.tolist(), limit=limit)
-    return faces, hits
+    hits = vector_store.search(q.embedding.tolist(), limit=limit, score_threshold=threshold)
+    return faces, hits, clean, ext
