@@ -1,0 +1,125 @@
+{
+  "current": {
+    "threshold": 0.35,
+    "overall_fmr": 0.0,
+    "overall_fnmr": 0.061728,
+    "worst_group_fmr": 0.0,
+    "worst_group_fnmr": 0.166667
+  },
+  "recommended": {
+    "threshold": 0.25,
+    "overall_fmr": 0.0,
+    "overall_fnmr": 0.0,
+    "worst_group_fmr": 0.0,
+    "worst_group_fnmr": 0.0
+  },
+  "sweep": [
+    {
+      "threshold": 0.25,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.0,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 0.0
+    },
+    {
+      "threshold": 0.275,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.003086,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 0.009259
+    },
+    {
+      "threshold": 0.3,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.015432,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 0.046296
+    },
+    {
+      "threshold": 0.325,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.033951,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 0.092593
+    },
+    {
+      "threshold": 0.35,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.061728,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 0.166667
+    },
+    {
+      "threshold": 0.375,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.12037,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 0.296296
+    },
+    {
+      "threshold": 0.4,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.259259,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 0.555556
+    },
+    {
+      "threshold": 0.425,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.391975,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 0.768519
+    },
+    {
+      "threshold": 0.45,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.533951,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 0.925926
+    },
+    {
+      "threshold": 0.475,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.657407,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 0.981481
+    },
+    {
+      "threshold": 0.5,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.783951,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 1.0
+    },
+    {
+      "threshold": 0.525,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.907407,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 1.0
+    },
+    {
+      "threshold": 0.55,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.972222,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 1.0
+    },
+    {
+      "threshold": 0.575,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 0.996914,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 1.0
+    },
+    {
+      "threshold": 0.6,
+      "overall_fmr": 0.0,
+      "overall_fnmr": 1.0,
+      "worst_group_fmr": 0.0,
+      "worst_group_fnmr": 1.0
+    }
+  ],
+  "synthetic": true,
+  "dataset": "synthetic-demo"
+}
