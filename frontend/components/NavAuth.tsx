@@ -18,7 +18,12 @@ export default function NavAuth() {
       <Link className="btn-ghost" href="/privacy">Privacy &amp; AI use</Link>
       {ready &&
         (me ? (
-          <button className="btn-ghost" onClick={() => setAccessKey(null)} title={me.roles.join(", ")}>
+          <button
+            className="btn-ghost"
+            onClick={() => setAccessKey(null)}
+            title={`Roles: ${me.roles.join(", ")}`}
+            aria-label={`Sign out ${me.name}`}
+          >
             {me.name} · sign out
           </button>
         ) : (
