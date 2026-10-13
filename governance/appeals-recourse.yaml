@@ -1,0 +1,24 @@
+# Appeals and recourse (FAIR-07, HUMO-03, HUMO-05). Code: backend/app/routes/appeals.py, services/appeals.py
+document: appeals-recourse
+owner: "@laavanjan"
+next_review: 2027-01-14
+endpoints:
+  submit: "POST /appeals - public, no account needed; returns appeal id + one-time access token"
+  status: "GET /appeals/{id} with X-Appeal-Token - appellant only"
+  staff: "GET /appeals, POST /appeals/{id}/acknowledge, POST /appeals/{id}/resolve (appeals:manage)"
+  ui: "frontend/app/appeal/page.tsx; 'Report incorrect match' on every released result"
+categories: [incorrect_match, indexing_objection, deletion_request, access_request, other]
+timeline:
+  restriction: "immediate - referenced photo excluded from search and from released matches"
+  acknowledge_within_days: 2      # APPEAL_ACK_DAYS
+  decide_within_days: 30          # APPEAL_RESOLUTION_DAYS
+  escalation_response_business_days: 10
+  overdue: "flagged in the reviewer queue; > 30 days is a P2 incident"
+outcome_handling:
+  upheld: "delete_photo (photo + every vector, admin) or keep restricted; appellant sees outcome and reason"
+  partially_upheld: "action as decided, with written explanation"
+  rejected: "restore_photo returns it to search; reason given"
+  record: "outcome, resolution text, pseudonymous resolver, time; audit_log appeal.resolve with rationale"
+  contact: "encrypted; used to send the decision; wiped 30 days after resolution"
+  escalation: "appellant replies quoting the reference -> System Owner re-examines; may also complain to a data protection authority"
+fairness_link: "More than 3 upheld incorrect_match appeals in a quarter triggers a fairness re-evaluation (governance/fairness-test-plan.yaml)"
