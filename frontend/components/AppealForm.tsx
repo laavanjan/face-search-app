@@ -94,7 +94,7 @@ export default function AppealForm({ photoId, faceId, caseId, defaultCategory, c
       />
       <input
         className="w-full rounded-xl bg-black/30 border border-white/10 p-2"
-        placeholder="Contact for our reply (optional)"
+        placeholder="Email or phone for our reply (optional, stored encrypted)"
         maxLength={200}
         value={contact}
         onChange={(e) => setContact(e.target.value)}
