@@ -10,6 +10,9 @@ resolution.
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
+import secrets
 import time
 import uuid
 
@@ -43,6 +46,7 @@ def submit(
     now = time.time()
     appeal_id = uuid.uuid4().hex
     restricted = False
+    access_token = secrets.token_urlsafe(18)  # shown once; only its hash is stored
     if photo_id and not storage.valid_photo_id(photo_id):
         photo_id = None
     if photo_id and category in RESTRICTING:
@@ -50,20 +54,26 @@ def submit(
     with db.tx() as c:
         c.execute(
             "INSERT INTO appeals (id, created_at, category, photo_id, face_id, case_id, reason, contact, "
-            "status, ack_by, resolve_by) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+            "status, access_hash, ack_by, resolve_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 appeal_id, now, category, photo_id, face_id, case_id, reason,
                 crypto.encrypt(contact.strip().lower()) if contact else None,  # encrypted at rest
-                "received", now + s.appeal_ack_days * DAY, now + s.appeal_resolution_days * DAY,
+                "received", _hash(access_token), now + s.appeal_ack_days * DAY, now + s.appeal_resolution_days * DAY,
             ),
         )
     audit.record(
         submitter or Principal("anonymous", ("public",), frozenset()),
-        "appeal.submit", appeal_id, category=category, restricted=restricted,
+        "appeal.submit", appeal_id, decision="restricted" if restricted else "received",
+        evidence={"category": category, "photo_id": photo_id, "restricted": restricted},
     )
-    out = public_view(appeal_id)
+    out = public_view(appeal_id, access_token)
     out["photo_restricted"] = restricted
+    out["access_token"] = access_token
     return out
+
+
+def _hash(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def _row(appeal_id: str) -> dict:
@@ -74,8 +84,15 @@ def _row(appeal_id: str) -> dict:
     return dict(r)
 
 
-def public_view(appeal_id: str) -> dict:
-    r = _row(appeal_id)
+def public_view(appeal_id: str, access_token: str | None) -> dict:
+    """Subject-scoped status lookup: needs the appeal's own access token.
+    A wrong or missing token looks exactly like a missing appeal."""
+    try:
+        r = _row(appeal_id)
+    except HTTPException:
+        r = None
+    if not r or not access_token or not r["access_hash"] or not hmac.compare_digest(r["access_hash"], _hash(access_token)):
+        raise HTTPException(404, "Appeal not found")
     return {k: r[k] for k in _PUBLIC_FIELDS}
 
 
@@ -127,5 +144,6 @@ def resolve(appeal_id: str, outcome: str, resolution: str, action: str, actor: P
             "UPDATE appeals SET status='resolved', outcome=?, resolution=?, resolved_by=?, resolved_at=? WHERE id=?",
             (outcome, resolution, actor.ref, time.time(), appeal_id),
         )
-    audit.record(actor, "appeal.resolve", appeal_id, outcome=outcome, action=action)
+    audit.record(actor, "appeal.resolve", appeal_id, decision=outcome, reason=resolution,
+                 evidence={"action": action, "photo_id": pid, "category": r["category"]})
     return _row(appeal_id)
