@@ -1,7 +1,9 @@
 """Governance document check (run weekly by CI and on every PR).
 
-Fails if any artefact path declared in docs/README.md is missing, or any
-document's "Next review" date is in the past.
+Fails if any artefact path declared in docs/README.md is missing, any
+document's "Next review" date is in the past, or a machine-readable record in
+governance/*.yaml is missing a required section (e.g. severity levels,
+re-evaluation triggers, ranked impacts with mitigations).
 
     python scripts/check_governance.py
 """
@@ -45,9 +47,49 @@ def overdue_reviews(today: dt.date) -> list[str]:
     return bad
 
 
+# governance/<file>.yaml -> top-level keys that must be present.
+REQUIRED_RECORDS: dict[str, list[str]] = {
+    "incident-response.yaml": ["owner", "severity_levels", "escalation_contacts", "runbook", "serious_incident_reevaluation"],
+    "change-management.yaml": ["owner", "versioning", "reevaluate_before_release_when", "enforcement"],
+    "regulatory-mapping.yaml": ["owner", "regulations"],
+    "risk-assessment.yaml": ["owner", "risk_tier", "risk_tier_reasoning", "application_domain", "stakeholders", "scale", "environment"],
+    "ethical-impacts.yaml": ["owner", "ranking_method", "impacts"],
+    "oversight-roles.yaml": ["owner", "roles", "assignment_process", "separation_of_duties"],
+    "human-approval-gates.yaml": ["owner", "high_risk_decision_paths", "human_controls"],
+    "data-retention-policy.yaml": ["owner", "schedule", "deletion_mechanisms"],
+    "de-identification.yaml": ["owner", "privacy_guarantee", "methods", "validation"],
+    "model-training-data.yaml": ["owner", "model", "licences", "permitted_use", "prohibited_use"],
+    "synthetic-data-bias-assessment.yaml": ["owner", "sources", "bias_assessment", "limitations_disclosed"],
+}
+
+
+def record_problems(today: dt.date) -> list[str]:
+    bad = []
+    for name, keys in REQUIRED_RECORDS.items():
+        path = ROOT / "governance" / name
+        if not path.exists():
+            bad.append(f"missing governance record: governance/{name}")
+            continue
+        text = path.read_text(encoding="utf-8")
+        top = set(re.findall(r"^([a-z_]+):", text, re.M))
+        bad += [f"governance/{name}: missing section '{k}'" for k in keys if k not in top]
+        m = re.search(r"^next_review:\s*(\d{4}-\d{2}-\d{2})", text, re.M)
+        if not m:
+            bad.append(f"governance/{name}: no next_review date")
+        elif dt.date.fromisoformat(m.group(1)) < today:
+            bad.append(f"governance/{name}: next review {m.group(1)} has passed")
+    impacts = ROOT / "governance" / "ethical-impacts.yaml"
+    if impacts.exists():
+        t = impacts.read_text(encoding="utf-8")
+        if t.count("- rank:") != t.count("mitigation:"):
+            bad.append("governance/ethical-impacts.yaml: every ranked impact needs a mitigation")
+    return bad
+
+
 def main() -> int:
     problems = [f"missing artefact: {p}" for p in sorted(declared_paths()) if not (ROOT / p).exists()]
     problems += overdue_reviews(dt.date.today())
+    problems += record_problems(dt.date.today())
     for p in problems:
         print(f"::error::{p}")
     print(f"governance check: {len(problems)} problem(s)")
