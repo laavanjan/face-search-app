@@ -1,3 +1,5 @@
+import hashlib
+import json
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -134,6 +136,9 @@ class Settings(BaseSettings):
             "data_processing_legal_basis": self.data_processing_legal_basis,
             "photo_retention_days": self.photo_retention_days,
         }
+
+    def governance_fingerprint(self) -> str:
+        return hashlib.sha256(json.dumps(self.governance_snapshot(), sort_keys=True).encode()).hexdigest()
 
 
 @lru_cache
