@@ -1,0 +1,38 @@
+{
+ "status": "preprocessing-only (model not evaluated)",
+ "run_date": "2026-10-14",
+ "dataset": "synthetic-demo (random-pixel images, no faces)",
+ "images": 12,
+ "threshold": 0.35,
+ "weakest_shift": "none (all shifts scored the same)",
+ "results": {
+  "blur": {
+   "preprocess_success_rate": 1.0
+  },
+  "low_light": {
+   "preprocess_success_rate": 1.0
+  },
+  "over_exposed": {
+   "preprocess_success_rate": 1.0
+  },
+  "jpeg_q15": {
+   "preprocess_success_rate": 1.0
+  },
+  "downscale_25pct": {
+   "preprocess_success_rate": 1.0
+  },
+  "rotate_20deg": {
+   "preprocess_success_rate": 1.0
+  },
+  "occlusion": {
+   "preprocess_success_rate": 1.0
+  },
+  "grayscale": {
+   "preprocess_success_rate": 1.0
+  },
+  "sensor_noise": {
+   "preprocess_success_rate": 1.0
+  }
+ },
+ "interpretation": "All shifts are normalised safely by preprocessing. Model robustness still needs a run on consented face photos."
+}

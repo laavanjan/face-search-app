@@ -1,0 +1,792 @@
+{
+ "outcome": "iterate",
+ "interpretation": "Synthetic data cannot support acceptance; run on the consented evaluation set.",
+ "run_date": "2026-10-14",
+ "dataset": "synthetic-demo",
+ "synthetic": true,
+ "model": "buffalo_l",
+ "threshold": 0.35,
+ "parity_metric": "error-rate parity (FMR ratio and FNMR gap across groups)",
+ "breaches": [
+  "skin_tone=Fitzpatrick V-VI: FNMR 0.166667 > 0.05",
+  "skin_tone: FNMR gap 0.1667 > 0.03",
+  "age_band=51+: FNMR 0.12037 > 0.05",
+  "age_band: FNMR gap 0.0926 > 0.03",
+  "gender_presentation=masculine: FNMR 0.064815 > 0.05",
+  "gender_presentation=other: FNMR 0.074074 > 0.05"
+ ],
+ "by_group": {
+  "skin_tone": [
+   {
+    "skin_tone": "Fitzpatrick I-II",
+    "fmr": 0.0,
+    "fnmr": 0.0,
+    "genuine": 108,
+    "impostor": 5670
+   },
+   {
+    "skin_tone": "Fitzpatrick III-IV",
+    "fmr": 0.0,
+    "fnmr": 0.018519,
+    "genuine": 108,
+    "impostor": 5670
+   },
+   {
+    "skin_tone": "Fitzpatrick V-VI",
+    "fmr": 0.0,
+    "fnmr": 0.166667,
+    "genuine": 108,
+    "impostor": 5670
+   }
+  ],
+  "age_band": [
+   {
+    "age_band": "18-30",
+    "fmr": 0.0,
+    "fnmr": 0.037037,
+    "genuine": 108,
+    "impostor": 5670
+   },
+   {
+    "age_band": "31-50",
+    "fmr": 0.0,
+    "fnmr": 0.027778,
+    "genuine": 108,
+    "impostor": 5670
+   },
+   {
+    "age_band": "51+",
+    "fmr": 0.0,
+    "fnmr": 0.12037,
+    "genuine": 108,
+    "impostor": 5670
+   }
+  ],
+  "gender_presentation": [
+   {
+    "gender_presentation": "feminine",
+    "fmr": 0.0,
+    "fnmr": 0.046296,
+    "genuine": 108,
+    "impostor": 5670
+   },
+   {
+    "gender_presentation": "masculine",
+    "fmr": 0.0,
+    "fnmr": 0.064815,
+    "genuine": 108,
+    "impostor": 5670
+   },
+   {
+    "gender_presentation": "other",
+    "fmr": 0.0,
+    "fnmr": 0.074074,
+    "genuine": 108,
+    "impostor": 5670
+   }
+  ]
+ },
+ "overall": {
+  "group": {
+   "all": "all"
+  },
+  "genuine_pairs": 324,
+  "impostor_pairs": 52002,
+  "fmr": 0.0,
+  "fmr_ci95": [
+   0.0,
+   7e-05
+  ],
+  "fnmr": 0.061728,
+  "fnmr_ci95": [
+   0.04031,
+   0.09342
+  ]
+ },
+ "limits": {
+  "max_group_fmr": 0.01,
+  "max_group_fnmr": 0.05,
+  "max_fmr_ratio": 2.0,
+  "max_fnmr_gap": 0.03,
+  "min_genuine_pairs_per_group": 100,
+  "min_impostor_pairs_per_group": 1000
+ },
+ "consent_basis": "n/a (generated)",
+ "insufficient_samples": [],
+ "by_group_detail": {
+  "skin_tone": [
+   {
+    "group": {
+     "skin_tone": "Fitzpatrick I-II"
+    },
+    "genuine_pairs": 108,
+    "impostor_pairs": 5670,
+    "fmr": 0.0,
+    "fmr_ci95": [
+     0.0,
+     0.00068
+    ],
+    "fnmr": 0.0,
+    "fnmr_ci95": [
+     0.0,
+     0.03435
+    ]
+   },
+   {
+    "group": {
+     "skin_tone": "Fitzpatrick III-IV"
+    },
+    "genuine_pairs": 108,
+    "impostor_pairs": 5670,
+    "fmr": 0.0,
+    "fmr_ci95": [
+     0.0,
+     0.00068
+    ],
+    "fnmr": 0.018519,
+    "fnmr_ci95": [
+     0.00509,
+     0.06502
+    ]
+   },
+   {
+    "group": {
+     "skin_tone": "Fitzpatrick V-VI"
+    },
+    "genuine_pairs": 108,
+    "impostor_pairs": 5670,
+    "fmr": 0.0,
+    "fmr_ci95": [
+     0.0,
+     0.00068
+    ],
+    "fnmr": 0.166667,
+    "fnmr_ci95": [
+     0.1081,
+     0.24813
+    ]
+   }
+  ],
+  "age_band": [
+   {
+    "group": {
+     "age_band": "18-30"
+    },
+    "genuine_pairs": 108,
+    "impostor_pairs": 5670,
+    "fmr": 0.0,
+    "fmr_ci95": [
+     0.0,
+     0.00068
+    ],
+    "fnmr": 0.037037,
+    "fnmr_ci95": [
+     0.0145,
+     0.09138
+    ]
+   },
+   {
+    "group": {
+     "age_band": "31-50"
+    },
+    "genuine_pairs": 108,
+    "impostor_pairs": 5670,
+    "fmr": 0.0,
+    "fmr_ci95": [
+     0.0,
+     0.00068
+    ],
+    "fnmr": 0.027778,
+    "fnmr_ci95": [
+     0.00949,
+     0.0785
+    ]
+   },
+   {
+    "group": {
+     "age_band": "51+"
+    },
+    "genuine_pairs": 108,
+    "impostor_pairs": 5670,
+    "fmr": 0.0,
+    "fmr_ci95": [
+     0.0,
+     0.00068
+    ],
+    "fnmr": 0.12037,
+    "fnmr_ci95": [
+     0.07171,
+     0.19511
+    ]
+   }
+  ],
+  "gender_presentation": [
+   {
+    "group": {
+     "gender_presentation": "feminine"
+    },
+    "genuine_pairs": 108,
+    "impostor_pairs": 5670,
+    "fmr": 0.0,
+    "fmr_ci95": [
+     0.0,
+     0.00068
+    ],
+    "fnmr": 0.046296,
+    "fnmr_ci95": [
+     0.01993,
+     0.10383
+    ]
+   },
+   {
+    "group": {
+     "gender_presentation": "masculine"
+    },
+    "genuine_pairs": 108,
+    "impostor_pairs": 5670,
+    "fmr": 0.0,
+    "fmr_ci95": [
+     0.0,
+     0.00068
+    ],
+    "fnmr": 0.064815,
+    "fnmr_ci95": [
+     0.03175,
+     0.12778
+    ]
+   },
+   {
+    "group": {
+     "gender_presentation": "other"
+    },
+    "genuine_pairs": 108,
+    "impostor_pairs": 5670,
+    "fmr": 0.0,
+    "fmr_ci95": [
+     0.0,
+     0.00068
+    ],
+    "fnmr": 0.074074,
+    "fnmr_ci95": [
+     0.03801,
+     0.1394
+    ]
+   }
+  ]
+ },
+ "intersectional": [
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick I-II",
+    "age_band": "18-30",
+    "gender_presentation": "feminine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick I-II",
+    "age_band": "18-30",
+    "gender_presentation": "masculine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick I-II",
+    "age_band": "18-30",
+    "gender_presentation": "other"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick I-II",
+    "age_band": "31-50",
+    "gender_presentation": "feminine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick I-II",
+    "age_band": "31-50",
+    "gender_presentation": "masculine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick I-II",
+    "age_band": "31-50",
+    "gender_presentation": "other"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick I-II",
+    "age_band": "51+",
+    "gender_presentation": "feminine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick I-II",
+    "age_band": "51+",
+    "gender_presentation": "masculine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick I-II",
+    "age_band": "51+",
+    "gender_presentation": "other"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick III-IV",
+    "age_band": "18-30",
+    "gender_presentation": "feminine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick III-IV",
+    "age_band": "18-30",
+    "gender_presentation": "masculine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick III-IV",
+    "age_band": "18-30",
+    "gender_presentation": "other"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick III-IV",
+    "age_band": "31-50",
+    "gender_presentation": "feminine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick III-IV",
+    "age_band": "31-50",
+    "gender_presentation": "masculine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick III-IV",
+    "age_band": "31-50",
+    "gender_presentation": "other"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick III-IV",
+    "age_band": "51+",
+    "gender_presentation": "feminine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick III-IV",
+    "age_band": "51+",
+    "gender_presentation": "masculine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick III-IV",
+    "age_band": "51+",
+    "gender_presentation": "other"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.166667,
+   "fnmr_ci95": [
+    0.04696,
+    0.44804
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick V-VI",
+    "age_band": "18-30",
+    "gender_presentation": "feminine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.0,
+   "fnmr_ci95": [
+    0.0,
+    0.2425
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick V-VI",
+    "age_band": "18-30",
+    "gender_presentation": "masculine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.166667,
+   "fnmr_ci95": [
+    0.04696,
+    0.44804
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick V-VI",
+    "age_band": "18-30",
+    "gender_presentation": "other"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.166667,
+   "fnmr_ci95": [
+    0.04696,
+    0.44804
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick V-VI",
+    "age_band": "31-50",
+    "gender_presentation": "feminine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.083333,
+   "fnmr_ci95": [
+    0.01486,
+    0.35389
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick V-VI",
+    "age_band": "31-50",
+    "gender_presentation": "masculine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.083333,
+   "fnmr_ci95": [
+    0.01486,
+    0.35389
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick V-VI",
+    "age_band": "31-50",
+    "gender_presentation": "other"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.083333,
+   "fnmr_ci95": [
+    0.01486,
+    0.35389
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick V-VI",
+    "age_band": "51+",
+    "gender_presentation": "feminine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.333333,
+   "fnmr_ci95": [
+    0.13812,
+    0.60938
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick V-VI",
+    "age_band": "51+",
+    "gender_presentation": "masculine"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.333333,
+   "fnmr_ci95": [
+    0.13812,
+    0.60938
+   ]
+  },
+  {
+   "group": {
+    "skin_tone": "Fitzpatrick V-VI",
+    "age_band": "51+",
+    "gender_presentation": "other"
+   },
+   "genuine_pairs": 12,
+   "impostor_pairs": 54,
+   "fmr": 0.0,
+   "fmr_ci95": [
+    0.0,
+    0.06642
+   ],
+   "fnmr": 0.25,
+   "fnmr_ci95": [
+    0.08894,
+    0.53231
+   ]
+  }
+ ]
+}
