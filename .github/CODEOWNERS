@@ -1,0 +1,13 @@
+# Accountable owner for this system (see GOVERNANCE.md). Pair with branch
+# protection on main: "Require review from Code Owners" + required CI checks.
+*                         @laavanjan
+
+# Governance-sensitive paths - changes need a change record in docs/changes/.
+/backend/app/config.py    @laavanjan
+/backend/app/security.py  @laavanjan
+/backend/app/services/    @laavanjan
+/backend/.env.example     @laavanjan
+/docker-compose.yml       @laavanjan
+/GOVERNANCE.md            @laavanjan
+/docs/                    @laavanjan
+/.github/                 @laavanjan

@@ -1,0 +1,67 @@
+# Weekly governance monitoring (docs/governance/monitoring-schedule.md).
+# Owner: System Owner (@laavanjan). A failing run opens a `governance-review` issue.
+name: Governance monitoring
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Governance documents present and in date
+        run: python scripts/check_governance.py
+
+      - name: Install backend (without model packages)
+        working-directory: backend
+        run: grep -vE '^(insightface|onnxruntime)' requirements.txt > /tmp/req.txt && pip install -r /tmp/req.txt
+
+      - name: Backend test suite (access control, review gates, retention, privacy)
+        working-directory: backend
+        run: pytest
+
+      - name: API boots and /health is healthy
+        working-directory: backend
+        env:
+          API_KEYS: monitor:viewer:ci-monitor-token
+          GOVERNANCE_DB_PATH: /tmp/gov/governance.db
+          LOCAL_PHOTO_DIR: /tmp/photos
+        run: |
+          uvicorn app.main:app --port 8000 > /tmp/api.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/health > /tmp/health.json; then break; fi
+            sleep 2
+          done
+          cat /tmp/health.json
+          python - <<'EOF'
+          import json, sys
+          h = json.load(open("/tmp/health.json"))
+          assert h["status"] == "ok", h
+          assert h["config_approved"] is True, h
+          print("health ok")
+          EOF
+          # Protected routes must refuse anonymous callers.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/gallery)" = "401"
+
+      - name: Open issue for the accountable owner on failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create governance-review --color B60205 --force || true
+          gh issue create \
+            --title "Governance monitoring failed ($(date -u +%F))" \
+            --label governance-review \
+            --assignee laavanjan \
+            --body "The weekly governance monitoring run failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Triage per docs/governance/incident-response.md (P2 if not explained within 2 business days)."

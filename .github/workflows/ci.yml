@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # Tests mock InsightFace, so skip the heavy model packages.
+      - run: grep -vE '^(insightface|onnxruntime)' requirements.txt > /tmp/req.txt && pip install -r /tmp/req.txt
+      - run: pytest
+
+  frontend-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install --no-audit --no-fund
+      - run: npx next build
+
+  governance-docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python scripts/check_governance.py
+
+  # Material changes need a change record (docs/governance/change-management.md).
+  change-record:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require docs/changes/CHG-*.md when governance-sensitive files change
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          changed=$(git diff --name-only "$BASE"...HEAD)
+          echo "$changed"
+          sensitive=$(echo "$changed" | grep -E '^(backend/app/config\.py|backend/app/security\.py|backend/app/services/(face_engine|pipeline|vector_store|storage|rekognition|review|controls|retention|privacy)\.py|backend/\.env\.example|backend/requirements\.txt|backend/Dockerfile|docker-compose\.yml)$' || true)
+          record=$(echo "$changed" | grep -E '^docs/changes/CHG-[0-9]+.*\.md$' || true)
+          if [ -n "$sensitive" ] && [ -z "$record" ]; then
+            echo "::error::Governance-sensitive files changed without a change record in docs/changes/:"
+            echo "$sensitive"
+            exit 1
+          fi
