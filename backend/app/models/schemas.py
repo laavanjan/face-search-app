@@ -89,7 +89,12 @@ class AppealRequest(BaseModel):
     photo_id: Optional[str] = Field(None, max_length=64)
     face_id: Optional[str] = Field(None, max_length=80)
     case_id: Optional[str] = Field(None, max_length=64)
-    contact: Optional[str] = Field(None, max_length=200, description="Optional; used only to reply")
+    contact: Optional[str] = Field(
+        None,
+        max_length=200,
+        pattern=r"^([^@\s]+@[^@\s]+\.[^@\s]+|\+?[0-9 ()-]{7,20})$",
+        description="Optional email or phone; encrypted at rest and used only to reply",
+    )
 
 
 class AppealResolve(BaseModel):
