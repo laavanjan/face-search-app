@@ -11,6 +11,7 @@ import logging
 from typing import Optional
 
 from app.config import get_settings
+from app.services.resilience import aws_config
 
 log = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ def _get_client():
             aws_access_key_id=s.aws_access_key_id,
             aws_secret_access_key=s.aws_secret_access_key,
             region_name=s.aws_region,
+            config=aws_config(),  # bounded timeouts + standard retry mode
         )
     return _client
 
@@ -41,7 +43,8 @@ def detect_faces(image_bytes: bytes) -> Optional[list[dict]]:
     try:
         resp = client.detect_faces(Image={"Bytes": image_bytes}, Attributes=["DEFAULT"])
     except Exception as e:  # noqa: BLE001 - AWS surface is broad
-        log.warning("Rekognition call failed: %s", e)
+        # Retries already exhausted by botocore; degrade to InsightFace-only.
+        log.warning("op=rekognition.detect_faces failed: %s", type(e).__name__)
         return None
     out = []
     for fd in resp.get("FaceDetails", []):
