@@ -25,11 +25,27 @@ jobs:
 
       - name: Install backend (without model packages)
         working-directory: backend
-        run: grep -vE '^(insightface|onnxruntime)' requirements.txt > /tmp/req.txt && pip install -r /tmp/req.txt
+        run: cat requirements.txt requirements-dev.txt | grep -vE '^(insightface|onnxruntime|-r )' > /tmp/req.txt && pip install -r /tmp/req.txt
 
       - name: Backend test suite (access control, review gates, retention, privacy)
         working-directory: backend
         run: pytest
+
+      # FAIR-06: weekly fairness monitoring, broken down by protected group.
+      # FAIRNESS_MANIFEST points at the consented evaluation set (protected artifact).
+      # Exit 1 = parity limits breached (fails the run); exit 2 = no real data yet (warning).
+      - name: Fairness monitoring
+        env:
+          FAIRNESS_MANIFEST: ${{ secrets.FAIRNESS_MANIFEST_PATH }}
+          FAIRNESS_REPORT_DIR: fairness-reports
+        run: python backend/scripts/monitor_fairness.py || [ $? -eq 2 ]
+
+      - name: Keep fairness report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fairness-report
+          path: fairness-reports/
 
       - name: API boots and /health is healthy
         working-directory: backend

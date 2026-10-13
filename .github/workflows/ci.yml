@@ -49,7 +49,7 @@ jobs:
         with:
           python-version: "3.11"
       # Tests mock InsightFace, so skip the heavy model packages.
-      - run: grep -vE '^(insightface|onnxruntime)' requirements.txt > /tmp/req.txt && pip install -r /tmp/req.txt
+      - run: cat requirements.txt requirements-dev.txt | grep -vE '^(insightface|onnxruntime|-r )' > /tmp/req.txt && pip install -r /tmp/req.txt
       - run: pytest
 
   frontend-build:
