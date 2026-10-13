@@ -12,6 +12,7 @@ import io
 import logging
 import time
 import uuid
+import warnings
 
 import cv2
 import numpy as np
@@ -24,66 +25,18 @@ from app.services import controls, face_engine, rekognition, resilience, storage
 log = logging.getLogger(__name__)
 
 MAX_DIM = 1600
+# Refuse decompression bombs: images above this pixel count are rejected
+# outright (Pillow raises DecompressionBombError at 2x; warnings become errors).
+MAX_PIXELS = 40_000_000
+Image.MAX_IMAGE_PIXELS = MAX_PIXELS
 # PNG text chunk set by tests/fixtures/synthetic_faces.py. Production rejects
 # such images so synthetic fixtures can never land in the real stores.
 SYNTHETIC_MARKER = "fsa-synthetic"
 
-
-def _normalize(img: Image.Image) -> Image.Image:
-    img = ImageOps.exif_transpose(img).convert("RGB")
-    if max(img.size) > MAX_DIM:
-        img.thumbnail((MAX_DIM, MAX_DIM))
-    return img
-
-
-def _encode_clean(img: Image.Image, src_format: str | None) -> tuple[bytes, str]:
-    """Re-encode pixels only. No exif/icc/text chunks are carried over."""
-    buf = io.BytesIO()
-    if src_format == "PNG":
-        img.save(buf, format="PNG")
-        return buf.getvalue(), "png"
-    img.save(buf, format="JPEG", quality=92)
-    return buf.getvalue(), "jpg"
-
-
-def prepare(data: bytes) -> tuple[np.ndarray, bytes, str]:
-    """Validate + sanitize an upload. Returns (bgr, clean_bytes, ext)."""
-    try:
-        img = Image.open(io.BytesIO(data))
-        img.load()
-    except Exception as e:  # noqa: BLE001
-        raise ValueError("invalid_image") from e
-    if str(img.info.get(SYNTHETIC_MARKER, "")).lower() == "true" and not get_settings().synthetic_data_enabled:
-        raise ValueError("synthetic_data_rejected")
-    src_format = img.format
-    rgb = _normalize(img)
-    clean, ext = _encode_clean(rgb, src_format)
-    bgr = cv2.cvtColor(np.array(rgb), cv2.COLOR_RGB2BGR)
-    return bgr, clean, ext
-
-
-def _detect(bgr: np.ndarray) -> list[face_engine.DetectedFace]:
-    return resilience.run_with_deadline(
-        face_engine.analyze,
-        bgr,
-        timeout=get_settings().inference_timeout_seconds,
-        op="face_engine.analyze",
-    )
-
-
-def _cross_check_with_rekognition(bgr: np.ndarray, clean: bytes) -> dict[int, float]:
-    """Boost quality scores when Rekognition confirms a face at the same location."""
-    rek = rekognition.detect_faces(clean)
-    if not rek:
-        return {}
-    h, w = bgr.shape[:2]
-    boosts: dict[int, float] = {}
-    for i, r in enumerate(rek):
-        rx, ry, rw, rh = r["bbox_rel"]
-        boosts[i] = r["quality"]
-        _ = (rx * w, ry * h, rw * w, rh * h)  # kept for future IoU refinement
-    return boosts
-
+# Public entry points first. Both start with the human-intervention guard
+# (controls.ensure_allowed): if an admin paused the path or a config change is
+# unapproved, they raise 503 before any decoding, face analysis, storage,
+# vector write or review case happens.
 
 def ingest(data: bytes, *, uploaded_by: str) -> tuple[str, str, list[FaceRecord], str]:
     """Index every qualifying face. Faces start as `pending` (excluded from
@@ -145,3 +98,64 @@ def search(data: bytes, limit: int = 20, threshold: float = 0.35):
     q = faces[0]
     hits = vector_store.search(q.embedding.tolist(), limit=limit, score_threshold=threshold)
     return faces, hits, clean, ext
+
+
+def _normalize(img: Image.Image) -> Image.Image:
+    img = ImageOps.exif_transpose(img).convert("RGB")
+    if max(img.size) > MAX_DIM:
+        img.thumbnail((MAX_DIM, MAX_DIM))
+    return img
+
+
+def _encode_clean(img: Image.Image, src_format: str | None) -> tuple[bytes, str]:
+    """Re-encode pixels only. No exif/icc/text chunks are carried over."""
+    buf = io.BytesIO()
+    if src_format == "PNG":
+        img.save(buf, format="PNG")
+        return buf.getvalue(), "png"
+    img.save(buf, format="JPEG", quality=92)
+    return buf.getvalue(), "jpg"
+
+
+def prepare(data: bytes) -> tuple[np.ndarray, bytes, str]:
+    """Validate + sanitize an upload. Returns (bgr, clean_bytes, ext)."""
+    try:
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", Image.DecompressionBombWarning)
+            img = Image.open(io.BytesIO(data))
+            if img.width * img.height > MAX_PIXELS:
+                raise ValueError("too_many_pixels")
+            img.load()
+    except Exception as e:  # noqa: BLE001
+        raise ValueError("invalid_image") from e
+    if str(img.info.get(SYNTHETIC_MARKER, "")).lower() == "true" and not get_settings().synthetic_data_enabled:
+        raise ValueError("synthetic_data_rejected")
+    src_format = img.format
+    rgb = _normalize(img)
+    clean, ext = _encode_clean(rgb, src_format)
+    bgr = cv2.cvtColor(np.array(rgb), cv2.COLOR_RGB2BGR)
+    return bgr, clean, ext
+
+
+def _detect(bgr: np.ndarray) -> list[face_engine.DetectedFace]:
+    return resilience.run_with_deadline(
+        face_engine.analyze,
+        bgr,
+        timeout=get_settings().inference_timeout_seconds,
+        op="face_engine.analyze",
+    )
+
+
+def _cross_check_with_rekognition(bgr: np.ndarray, clean: bytes) -> dict[int, float]:
+    """Boost quality scores when Rekognition confirms a face at the same location."""
+    rek = rekognition.detect_faces(clean)
+    if not rek:
+        return {}
+    h, w = bgr.shape[:2]
+    boosts: dict[int, float] = {}
+    for i, r in enumerate(rek):
+        rx, ry, rw, rh = r["bbox_rel"]
+        boosts[i] = r["quality"]
+        _ = (rx * w, ry * h, rw * w, rh * h)  # kept for future IoU refinement
+    return boosts
+
