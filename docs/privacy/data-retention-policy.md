@@ -18,6 +18,7 @@ This schedule is public (also served at `GET /policy` and shown at `/privacy`).
 | Search reference photos | Governance DB (`review_cases.query_image`) | Until the case is closed (completed / no_match / stopped) | - | `review.close_case`; sweep clears leftovers |
 | Search review cases + candidates | Governance DB | **30 days** | `REVIEW_CASE_RETENTION_DAYS` | TTL sweep |
 | Resolved appeals | Governance DB | **365 days** after resolution | `APPEAL_RETENTION_DAYS` | TTL sweep |
+| Appeal contact details (encrypted) | Governance DB | **30 days** after resolution | `APPEAL_CONTACT_RETENTION_DAYS` | TTL sweep |
 | Audit log | Governance DB | **365 days** | `AUDIT_LOG_RETENTION_DAYS` | TTL sweep |
 | Application logs | stdout / log platform | ≤ 30 days on the log platform; personal data redacted at source | Platform setting | Platform |
 

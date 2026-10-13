@@ -32,6 +32,8 @@ differentially private release with a stated total ε and δ - and be added here
 | Payload allowlist | Minimisation | Qdrant stores only `photo_id, bbox, det_score, quality, review_status, indexed_at, uploaded_by, model` | `vector_store.py` docstring + `upsert()` |
 | Query image lifetime | Minimisation | Search reference photo is kept only while a reviewer needs it | `review.close_case()` |
 | Log redaction | Masking | Photo/face ids, filenames, emails, URLs, bearer tokens and the last IPv4 octet are masked in every log line, including uvicorn access logs and tracebacks | `app/logging_setup.py` |
+| Pseudonymisation | Keyed hashing | Staff account names are replaced by HMAC-SHA256 pseudonyms in the audit log, review records and vector payloads | `services/crypto.py` `pseudonym()` |
+| Contact encryption | Encryption | Appeal contacts encrypted at rest (Fernet), decrypted only for `appeals:manage`, wiped 30 days after resolution | `services/crypto.py`, `services/appeals.py` |
 | Opaque public status | Minimisation | Public appeal lookup never returns contact details | `appeals.public_view()` |
 
 ## 3. Validation
