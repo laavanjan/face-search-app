@@ -16,6 +16,8 @@ os.environ.update(
                 "sam:operator+reviewer:sam-token",
             ]
         ),
+        "ALLOWED_ROLE_BUNDLES": "operator+reviewer",
+        "DATA_ENCRYPTION_KEY": "test-only-key",
         "GOVERNANCE_DB_PATH": os.path.join(_tmp, "governance.db"),
         "LOCAL_PHOTO_DIR": os.path.join(_tmp, "photos"),
         "QDRANT_URL": "",

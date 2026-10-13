@@ -10,7 +10,7 @@ different seeds model "different people" and equal seeds "the same person".
 
 These fixtures exercise pipeline mechanics only. They carry no demographic,
 pose, lighting or camera variation and must never be used to claim accuracy
-or fairness (docs/privacy/synthetic-data.md).
+or fairness (governance/synthetic-data-bias-assessment.yaml).
 """
 from __future__ import annotations
 
