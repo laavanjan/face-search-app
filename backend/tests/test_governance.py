@@ -77,8 +77,9 @@ def test_least_privilege(client):
 
 
 def test_photo_id_path_traversal_rejected(client):
-    assert client.get("/photos/..%2F..%2Fetc%2Fpasswd", headers=VIEWER).status_code == 404
-    assert client.get("/photos/not-a-photo.jpg", headers=VIEWER).status_code == 404
+    # Rejected by path validation before any handler or storage code runs.
+    assert client.get("/photos/..%2F..%2Fetc%2Fpasswd", headers=VIEWER).status_code in (404, 422)
+    assert client.get("/photos/not-a-photo.jpg", headers=VIEWER).status_code == 422
 
 
 # --- PRIV-02: lawful basis ---------------------------------------------------------
@@ -220,7 +221,10 @@ def test_appeal_restricts_photo_until_resolved(client):
     assert appeal["resolve_by"] > appeal["created_at"]
     assert _search(client, 501).json()["candidate_count"] == 0  # restricted
 
-    public = client.get(f"/appeals/{appeal['id']}").json()
+    # Status lookup is subject-scoped: needs the token issued at submission.
+    assert client.get(f"/appeals/{appeal['id']}").status_code == 404
+    assert client.get(f"/appeals/{appeal['id']}", headers={"X-Appeal-Token": "wrong"}).status_code == 404
+    public = client.get(f"/appeals/{appeal['id']}", headers={"X-Appeal-Token": appeal["access_token"]}).json()
     assert "contact" not in public and public["status"] == "received"
 
     queue = client.get("/appeals", headers=REVIEWER).json()["items"]
