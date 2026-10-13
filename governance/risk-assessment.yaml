@@ -1,0 +1,37 @@
+# Risk and impact assessment (RISK-01, RISK-02, GOV-04). Detail: docs/risk/risk-assessment.md
+document: risk-assessment
+owner: "@laavanjan"
+assessed: 2026-10-14
+next_review: 2027-01-14
+risk_tier: high              # scale: low | medium | high
+risk_tier_reasoning:
+  - "Processes biometric data: 512-d face embeddings are special-category personal data that cannot be revoked"
+  - "Performs 1:N identification (search one face against the whole library) - the capability the EU AI Act lists as high-risk"
+  - "Affects non-users: bystanders in uploaded photos never interact with the system"
+  - "Errors are harmful: a false match discloses a photo of the wrong person; error rates can differ across groups"
+  - "Optional AWS Rekognition/S3 adds third-party and transfer risk"
+  - "Controls reduce likelihood, not inherent severity, so the tier stays high"
+application_domain: "Consumer and organisational photo management - biometric face identification in a private, consented photo collection"
+out_of_scope: [surveillance, law enforcement, employment, housing, credit, insurance, education, healthcare decisions]
+stakeholders:
+  - {group: "Photo uploaders / operators", impact: "Act on matches; could misuse search", owner: System Owner}
+  - {group: "People depicted in photos, incl. bystanders and minors", impact: "Biometric indexing, findability, misidentification", owner: Human Reviewer}
+  - {group: "Person in the search reference photo", impact: "Compared against whole library", owner: Human Reviewer}
+  - {group: "Search-result subjects", impact: "Photo disclosed to requester; false match", owner: Human Reviewer}
+  - {group: "Human reviewers", impact: "Automation bias, workload", owner: System Owner}
+  - {group: "Administrators", impact: "Hold keys, run deletion", owner: System Owner}
+  - {group: "Appeal submitters", impact: "Contact data held for reply", owner: Privacy Owner}
+  - {group: "AWS, Qdrant, InsightFace (third parties)", impact: "Receive or govern data/models", owner: Privacy Owner}
+scale:
+  approved_maximum:          # renewed assessment required before exceeding
+    authorised_users: 10
+    photos_uploaded_per_day: 500
+    faces_indexed_per_day: 2000
+    retained_photos: 20000
+    retained_vectors: 100000
+    searches_per_day: 200
+    concurrent_searches: 5
+  current_dev: {authorised_users: 5, photos_per_day: 50, searches_per_day: 20}
+  limits_in_code: "15 MB upload, MAX_DIM 1600px, SEARCH_MAX_LIMIT 50, SEARCH_MIN_THRESHOLD 0.35, 60s inference deadline"
+environment: "Single-host Docker (docker-compose.yml: Qdrant, FastAPI backend, Next.js frontend); optional Lambda, Qdrant Cloud, S3, Rekognition"
+ranked_impacts: governance/ethical-impacts.yaml
