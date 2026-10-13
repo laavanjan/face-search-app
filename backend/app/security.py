@@ -2,7 +2,7 @@
 
 Deny by default: a request without a valid key gets 401, a principal without
 the needed permission gets 403. Roles map to narrow permission sets so no role
-implicitly gets everything (docs/oversight/human-oversight.md, "Roles").
+implicitly gets everything (governance/oversight-roles.yaml).
 """
 from __future__ import annotations
 
@@ -41,6 +41,16 @@ class Principal:
     def can(self, perm: str) -> bool:
         return perm in self.permissions
 
+    @property
+    def ref(self) -> str:
+        """What gets stored (audit log, review records, vector payloads):
+        a keyed pseudonym, never the account name."""
+        if set(self.roles) & {"system", "public"}:
+            return self.name
+        from app.services.crypto import pseudonym
+
+        return pseudonym(self.name)
+
 
 @dataclass(frozen=True)
 class _KeyEntry:
@@ -55,7 +65,8 @@ class _KeyEntry:
 
 
 @lru_cache
-def _key_entries(raw: str) -> tuple[_KeyEntry, ...]:
+def _key_entries(raw: str, bundles: str, environment: str) -> tuple[_KeyEntry, ...]:
+    allowed_bundles = {frozenset(b.strip().split("+")) for b in bundles.split(",") if b.strip()}
     entries = []
     for item in (p.strip() for p in raw.split(",")):
         if not item:
@@ -70,13 +81,25 @@ def _key_entries(raw: str) -> tuple[_KeyEntry, ...]:
         if unknown:
             log.error("Ignoring API_KEYS entry with unknown role(s) %s.", unknown)
             continue
+        if len(roles) > 1 and frozenset(roles) not in allowed_bundles:
+            # Least privilege: combining roles needs an explicit, reviewed allowlist entry.
+            log.error("Ignoring API_KEYS entry with role bundle %s not in ALLOWED_ROLE_BUNDLES.", "+".join(roles))
+            continue
+        if environment == "production" and not token.startswith("sha256:"):
+            log.error("Ignoring API_KEYS entry with a raw token: production requires sha256:<hex>.")
+            continue
         perms = frozenset().union(*(ROLE_PERMISSIONS[r] for r in roles))
         entries.append(_KeyEntry(Principal(name, roles, perms), token))
     return tuple(entries)
 
 
+def _entries() -> tuple[_KeyEntry, ...]:
+    s = get_settings()
+    return _key_entries(s.api_keys, s.allowed_role_bundles, s.environment)
+
+
 def configured_principals() -> tuple[Principal, ...]:
-    return tuple(e.principal for e in _key_entries(get_settings().api_keys))
+    return tuple(e.principal for e in _entries())
 
 
 def _presented_token(request: Request) -> str | None:
@@ -90,7 +113,7 @@ def optional_principal(request: Request) -> Principal | None:
     token = _presented_token(request)
     if not token:
         return None
-    for e in _key_entries(get_settings().api_keys):
+    for e in _entries():
         if e.matches(token):
             return e.principal
     return None
