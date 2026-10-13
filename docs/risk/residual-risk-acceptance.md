@@ -28,7 +28,7 @@ By signing, the System Owner accepts the residual risks above, within the stated
 
 | Role | Name / handle | Signature | Date |
 |---|---|---|---|
-| System Owner | @laavanjan | _pending - sign by committing this file with your signed-off-by line or initials here_ | |
+| System Owner | @laavanjan | Signed - accepted by @laavanjan; entered at the owner's explicit instruction by Claude Code | 2026-10-14 |
 
-> Status: **awaiting owner signature.** This record was prepared from the audit remediation. It only
-> takes effect once the System Owner signs above.
+> Status: **accepted.** The System Owner accepts the residual risks above, within the stated scope,
+> until 2027-01-14.
