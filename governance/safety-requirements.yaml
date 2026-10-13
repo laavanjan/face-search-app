@@ -1,0 +1,42 @@
+# Safety requirements (SAFE-01, SAFE-04). Each requirement names its implementation and test.
+document: safety-requirements
+owner: "@laavanjan"
+next_review: 2027-01-14
+requirements:
+  - id: SR-1
+    text: "No biometric processing without authentication, authorisation and consent"
+    impl: "router-level auth (main.py), require_permissions, privacy.require_lawful_basis"
+    test: test_every_route_requires_auth_except_allowlist
+  - id: SR-2
+    text: "No match is disclosed without human verification"
+    impl: "services/review.py release gate"
+    test: test_search_results_released_only_after_review
+  - id: SR-3
+    text: "Every external endpoint validates its input before processing"
+    impl: "pydantic schemas with patterns/lengths; Path patterns for photo/case/face/appeal ids; Form/Query bounds; read_image type/size checks; decompression-bomb limit (pipeline.MAX_PIXELS)"
+    test: "tests/test_edge_cases.py"
+  - id: SR-4
+    text: "A human can stop indexing or search instantly"
+    impl: "controls.ensure_allowed in routes and pipeline"
+    test: test_pipeline_refuses_when_paused
+  - id: SR-5
+    text: "Critical paths are bounded in time, retry only transient faults, and fail closed"
+    impl: "services/resilience.py: inference deadline 60s, Qdrant timeout 20s, AWS timeouts, 3 retries with backoff, 503 fallback, Rekognition -> InsightFace-only"
+    test: "test_inference_deadline_returns_504, test_retry_only_transient, test_backend_outage_fails_closed_with_503"
+  - id: SR-6
+    text: "Low confidence -> abstain"
+    impl: "MIN_DET_SCORE 0.5, MIN_FACE_SIZE 40, SEARCH_MIN_THRESHOLD 0.35 (caller cannot lower)"
+    test: test_threshold_cannot_be_lowered_by_caller
+  - id: SR-7
+    text: "Abuse is rate-limited"
+    impl: "services/ratelimit.py: 20 failed auths / 10 min, 5 public appeals / 10 min per client"
+    test: "test_api_key_bruteforce_locked_out, test_appeal_flood_rate_limited"
+  - id: SR-8
+    text: "Personal data never appears in logs"
+    impl: logging_setup.RedactingFilter
+    test: test_logs_redact_personal_data
+input_validation_by_endpoint:
+  "POST /upload, /search": "content type, size <= 15 MB, decodable image, pixel limit, consent, limit 1-200, threshold 0-1"
+  "path ids": "photo ^hex32.(jpg|jpeg|png|webp)$, case/appeal ^hex32$, face uuid|manual:photo"
+  "JSON bodies": "pydantic: enums, reason 3-1000 chars, contact email/phone pattern"
+  "query params": "limit ranges, status enums, audit action pattern"
