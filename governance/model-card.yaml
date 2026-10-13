@@ -1,0 +1,37 @@
+# Model card + system description (TRAN-04). Provenance/licences: governance/model-training-data.yaml
+document: model-card
+owner: "@laavanjan"
+next_review: 2027-01-14
+model:
+  name: InsightFace buffalo_l (FACE_MODEL_NAME)
+  version: "insightface==0.7.3 model zoo pack; checksum recorded on first download"
+  components: {detector: "SCRFD-10GF", embedder: "ResNet-50 ArcFace, 512-d L2-normalised"}
+  not_loaded: [age/gender, landmarks]
+  task: "Face detection and 1:N face matching by cosine similarity"
+  output: "Similarity score in [-1, 1]; candidates >= SEARCH_MIN_THRESHOLD (0.35) proposed to a human"
+  training_data: "WIDER FACE (detector), WebFace600K (embedder) - third-party, not trained here"
+  evaluation: "Fairness: governance/evidence/fairness-results.json (synthetic only so far, outcome iterate). Robustness: governance/evidence/robustness-results.json (preprocessing only)"
+  known_limitations: governance/system-limitations.yaml
+system_description:
+  purpose: "Find photos of a consenting person within a private, authorised photo collection"
+  components: ["FastAPI backend (backend/app)", "Next.js UI (frontend)", "Qdrant vector store", "SQLite governance store", "optional AWS Rekognition (quality only) and S3"]
+  flow: "upload -> sanitize (EXIF strip) -> detect + embed -> pending -> human approves -> searchable; search -> candidates -> human verifies -> released"
+  human_oversight: governance/human-approval-gates.yaml
+  users: [operator, human reviewer, service owner, viewer, data subjects via /appeal]
+assumptions:
+  - "Uploaders have consent from everyone identifiable in each photo"
+  - "Photos are ordinary consumer photos: frontal-ish faces >= 40 px, reasonable lighting"
+  - "Collection size within governance/risk-assessment.yaml approved scale"
+  - "One largest face in a reference photo is the intended person"
+  - "Reviewers are trained and are not the requester"
+  - "Cosine 0.35 is a candidate floor, not an identity threshold"
+intended_use:
+  - "Personal or organisational photo libraries with documented consent"
+  - "Finding photos of oneself or of consenting people"
+prohibited_use:
+  - "Surveillance, tracking or CCTV"
+  - "Identifying strangers or people who have not consented"
+  - "Scraped or public-source images"
+  - "Law enforcement, border or immigration identification"
+  - "Decisions on employment, housing, credit, insurance, education, healthcare"
+  - "Inferring age, gender, ethnicity or emotion; commercial use without a model licence"
