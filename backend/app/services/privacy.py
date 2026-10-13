@@ -13,14 +13,22 @@ from app.config import get_settings
 from app.security import Principal
 from app.services import audit
 
+# Stated guarantee (governance/de-identification.yaml). No anonymisation is claimed.
+PRIVACY_GUARANTEE = (
+    "No k-anonymity or differential-privacy guarantee is provided. Face embeddings are "
+    "re-identifiable biometric personal data. Protection relies on: role-based access, "
+    "consent enforcement, human review before indexing and disclosure, metadata stripping, "
+    "keyed pseudonyms for staff identities, encrypted appeal contacts, and retention limits."
+)
+
 PROCESSING_SCOPE = {
     "data_categories": [
         "uploaded photographs (re-encoded; EXIF/GPS/device metadata removed)",
         "face bounding boxes and detector/quality scores",
         "512-dimensional face embeddings (biometric data)",
         "search query photos (held only while the search is under human review)",
-        "account names of operators/reviewers in the audit log",
-        "appeal text and optional contact details",
+        "pseudonymous actor ids (keyed HMAC of the account name) in audit and review records",
+        "appeal text and optional contact details (contact encrypted at rest)",
     ],
     "not_collected": [
         "original filenames",
@@ -77,5 +85,6 @@ def policy() -> dict:
         "search_max_limit": s.search_max_limit,
         "model": s.face_model_name,
         "uses_aws": s.use_rekognition or s.use_s3,
+        "privacy_guarantee": PRIVACY_GUARANTEE,
         "processing_scope": PROCESSING_SCOPE,
     }
