@@ -1,0 +1,23 @@
+# Privacy and AI-use notice - documentation copy of what the UI shows (PRIV-03, TRAN-01).
+# UI: frontend/app/layout.tsx (banner), frontend/app/privacy/page.tsx, frontend/app/page.tsx. API: GET /policy
+document: privacy-notice
+owner: Privacy & Incident Owner (@laavanjan, interim)
+notice_version: 2026-10-14
+next_review: 2027-01-14
+ai_disclosure: >
+  This is an automated facial-recognition system. Uploaded photos are analysed to detect
+  faces and create biometric embeddings; matches are AI similarity estimates that can be
+  wrong and are released only after human review.
+how_data_is_used:
+  - "InsightFace buffalo_l detects faces and creates a 512-number embedding per face, on the API host"
+  - "Qdrant stores embeddings and finds similar ones by cosine similarity"
+  - "Amazon Rekognition (only if AWS is configured) scores face quality; it never decides identity"
+  - "Image metadata (EXIF, GPS) and the filename are discarded before storage"
+  - "A reviewer approves each photo before it is searchable and every match before it is shown"
+legal_basis: "Explicit consent (DATA_PROCESSING_LEGAL_BASIS=consent); each confirmation is logged"
+permitted_use: "Finding photos of a consenting person in a private collection the operator may process"
+prohibited_use: "Surveillance, identifying strangers, scraped images, law enforcement, high-impact decisions"
+retention: {photos_and_embeddings_days: 90, search_reference_photo: "until the case closes", review_cases_days: 30, appeals_days: 365, audit_log_days: 365}
+not_collected: ["original filenames", "EXIF/GPS/camera data", "inferred age, gender, ethnicity or emotion"]
+rights: "Challenge a match, object to indexing, request deletion or access at /appeal - no account needed"
+limitations: governance/system-limitations.yaml
