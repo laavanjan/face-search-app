@@ -1,21 +1,47 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import AppealForm from "@/components/AppealForm";
+import AuthImage from "@/components/AuthImage";
+import ConsentCheck from "@/components/ConsentCheck";
 import Dropzone from "@/components/Dropzone";
-import { searchPhoto, type SearchResponse } from "@/lib/api";
+import { getPolicy, getSearchCase, searchPhoto, type SearchCase } from "@/lib/api";
+import { useSession } from "@/lib/session";
+
+const STATUS_TEXT: Record<string, string> = {
+  pending_review: "Waiting for a human reviewer. Candidates are not shown until they are verified.",
+  escalated: "Escalated to the Service Owner. Nothing is released yet.",
+  completed: "Reviewed. Only matches a reviewer confirmed are shown.",
+  no_match: "No candidates were confirmed.",
+  stopped: "A reviewer stopped this search. No results will be released.",
+};
 
 export default function SearchPage() {
+  const { ready, can, me } = useSession();
   const [busy, setBusy] = useState(false);
-  const [res, setRes] = useState<SearchResponse | null>(null);
+  const [res, setRes] = useState<SearchCase | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [consent, setConsent] = useState(false);
+  const [minThreshold, setMinThreshold] = useState(0.35);
   const [threshold, setThreshold] = useState(0.35);
+  const [appealFor, setAppealFor] = useState<string | null>(null);
+
+  useEffect(() => {
+    getPolicy()
+      .then((p) => {
+        setMinThreshold(p.search_min_threshold);
+        setThreshold((t) => Math.max(t, p.search_min_threshold));
+      })
+      .catch(() => {});
+  }, []);
 
   async function run(f: File) {
     setBusy(true);
     setErr(null);
     setRes(null);
     try {
-      const r = await searchPhoto(f, { limit: 40, threshold });
+      const r = await searchPhoto(f, { limit: 40, threshold, consent });
       setRes(r);
     } catch (e: any) {
       setErr(e.message ?? "search failed");
@@ -24,33 +50,53 @@ export default function SearchPage() {
     }
   }
 
+  async function refresh() {
+    if (!res) return;
+    try {
+      setRes(await getSearchCase(res.case_id));
+    } catch (e: any) {
+      setErr(e.message ?? "refresh failed");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <section className="glass rounded-2xl p-8">
         <h1 className="text-3xl font-semibold tracking-tight mb-2">
-          Find every photo of this person
+          Find photos of this person
         </h1>
         <p className="text-slate-400 text-sm mb-6 max-w-2xl">
           Drop a reference photo. We embed the largest face and run cosine
-          similarity against every indexed vector in Qdrant.
+          similarity against approved, indexed faces. The model only proposes
+          candidates: a human reviewer verifies each one before anything is
+          released to you. Scores are similarity estimates, not identification.
         </p>
-        <Dropzone onFile={run} disabled={busy} label="Drop a reference photo" />
-        <div className="flex items-center gap-3 mt-4 text-sm text-slate-300">
-          <label>Threshold</label>
-          <input
-            type="range"
-            min={0}
-            max={0.9}
-            step={0.01}
-            value={threshold}
-            onChange={(e) => setThreshold(parseFloat(e.target.value))}
-            className="accent-accent"
-          />
-          <span className="chip">{threshold.toFixed(2)}</span>
-          <span className="text-slate-500 text-xs">
-            Higher = stricter (fewer, more confident matches)
-          </span>
-        </div>
+        {ready && !can("photos:search") ? (
+          <div className="text-sm text-slate-400">
+            <Link href="/signin" className="underline">Sign in</Link> with an operator key to search.
+          </div>
+        ) : (
+          <>
+            <ConsentCheck purpose="search" checked={consent} onChange={setConsent} />
+            <Dropzone onFile={run} disabled={busy || !consent} label="Drop a reference photo" />
+            <div className="flex items-center gap-3 mt-4 text-sm text-slate-300">
+              <label>Threshold</label>
+              <input
+                type="range"
+                min={minThreshold}
+                max={0.9}
+                step={0.01}
+                value={threshold}
+                onChange={(e) => setThreshold(parseFloat(e.target.value))}
+                className="accent-accent"
+              />
+              <span className="chip">{threshold.toFixed(2)}</span>
+              <span className="text-slate-500 text-xs">
+                Minimum {minThreshold.toFixed(2)} is set by governance. Higher = fewer candidates.
+              </span>
+            </div>
+          </>
+        )}
         {busy && (
           <div className="mt-4 text-sm text-slate-400 animate-pulse">Searching…</div>
         )}
@@ -58,50 +104,51 @@ export default function SearchPage() {
       </section>
 
       {res && (
-        <section>
-          <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-lg font-medium">
-              {res.matches.length} match{res.matches.length === 1 ? "" : "es"}
-            </h2>
-            <div className="text-xs text-slate-500">
-              {res.query_faces} face(s) detected in reference
+        <section className="space-y-4">
+          <div className="glass rounded-2xl p-6 text-sm space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="chip">case · {res.case_id.slice(0, 8)}</span>
+              <span className="chip">status · {res.status}</span>
+              <span className="chip">threshold · {res.threshold_applied.toFixed(2)}</span>
+              {res.candidate_count != null && <span className="chip">{res.candidate_count} candidate(s)</span>}
+              <button className="btn-ghost" onClick={refresh}>Refresh</button>
+              {can("review:decide") && res.status === "pending_review" && (
+                <Link className="btn-ghost" href={`/review?case=${res.case_id}`}>
+                  Open in review queue
+                </Link>
+              )}
             </div>
+            <div className="text-slate-400">{STATUS_TEXT[res.status] ?? res.status}</div>
+            <div className="text-slate-500 text-xs">{res.notice}</div>
           </div>
-          {res.matches.length === 0 ? (
-            <div className="glass rounded-2xl p-8 text-center text-slate-400">
-              No matches above threshold. Try lowering it, or index more photos first.
-            </div>
-          ) : (
+
+          {res.matches.length > 0 && (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {res.matches.map((m) => (
-                <a
-                  key={m.face_id}
-                  href={`/photos/${m.photo_id}`}
-                  target="_blank"
-                  className="group glass rounded-xl overflow-hidden border border-white/5 hover:border-accent/50 transition"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`/photos/${m.photo_id}`}
-                    alt={m.photo_id}
-                    className="aspect-square object-cover w-full group-hover:scale-[1.02] transition"
-                  />
-                  <div className="p-2 flex items-center justify-between text-xs">
-                    <span className="text-slate-400">
-                      {(m.score * 100).toFixed(1)}%
-                    </span>
-                    <span
-                      className="h-1.5 w-16 rounded-full bg-white/10 overflow-hidden"
-                      title="similarity"
+                <div key={m.face_id} className="glass rounded-xl overflow-hidden border border-white/5">
+                  <AuthImage photoId={m.photo_id} alt="confirmed match" className="aspect-square object-cover w-full" />
+                  <div className="p-2 space-y-1 text-xs">
+                    <div className="flex items-center justify-between text-slate-400">
+                      <span>{m.score != null ? `${(m.score * 100).toFixed(1)}% similar` : "added by reviewer"}</span>
+                      <span title="verified by">✓ {m.reviewed_by}</span>
+                    </div>
+                    <button
+                      className="text-slate-400 underline"
+                      onClick={() => setAppealFor(appealFor === m.face_id ? null : m.face_id)}
                     >
-                      <span
-                        className="block h-full bg-gradient-to-r from-accent to-accent2"
-                        style={{ width: `${Math.min(100, m.score * 100)}%` }}
-                      />
-                    </span>
+                      Report incorrect match
+                    </button>
+                    {appealFor === m.face_id && (
+                      <AppealForm compact photoId={m.photo_id} faceId={m.face_id} caseId={res.case_id} />
+                    )}
                   </div>
-                </a>
+                </div>
               ))}
+            </div>
+          )}
+          {me && res.status === "completed" && res.matches.length === 0 && (
+            <div className="glass rounded-2xl p-8 text-center text-slate-400">
+              The reviewer did not confirm any candidate.
             </div>
           )}
         </section>
