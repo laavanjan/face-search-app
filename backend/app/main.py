@@ -12,7 +12,7 @@ from app.logging_setup import configure_logging
 from app.models.schemas import HealthResponse
 from app.routes import admin, appeals, photos, review, search, upload
 from app.security import Principal, configured_principals, current_principal, optional_principal
-from app.services import controls, face_engine, privacy, retention, storage, vector_store
+from app.services import controls, crypto, face_engine, privacy, retention, storage, vector_store
 
 configure_logging()
 log = logging.getLogger(__name__)
@@ -33,6 +33,7 @@ async def _retention_loop() -> None:
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     configure_logging()  # re-attach redaction to uvicorn's handlers
+    crypto.check_key()
     if not configured_principals():
         log.warning("API_KEYS is empty: every protected endpoint will answer 401.")
     elif any("change-me" in k for k in settings.api_keys.split(",")):
@@ -74,12 +75,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(upload.router, tags=["index"])
-app.include_router(search.router, tags=["search"])
-app.include_router(photos.router, tags=["photos"])
-app.include_router(review.router, tags=["review"])
-app.include_router(appeals.router, tags=["appeals"])
-app.include_router(admin.router, tags=["admin"])
+# Authentication is the default for every data-bearing router; each route then
+# adds its specific permission. Only meta routes and the two appeal routes
+# (submit + status lookup) are public - see tests/test_governance.py
+# ::test_every_route_requires_auth_except_allowlist.
+authenticated = [Depends(current_principal)]
+app.include_router(upload.router, tags=["index"], dependencies=authenticated)
+app.include_router(search.router, tags=["search"], dependencies=authenticated)
+app.include_router(photos.router, tags=["photos"], dependencies=authenticated)
+app.include_router(review.router, tags=["review"], dependencies=authenticated)
+app.include_router(appeals.router, tags=["appeals"], dependencies=authenticated)
+app.include_router(admin.router, tags=["admin"], dependencies=authenticated)
+app.include_router(appeals.public_router, tags=["appeals"])
 
 
 @app.get("/health", response_model=HealthResponse, tags=["meta"])
@@ -103,7 +110,7 @@ def health(p: Optional[Principal] = Depends(optional_principal)):
 
 @app.get("/auth/me", tags=["meta"])
 def whoami(p: Principal = Depends(current_principal)):
-    return {"name": p.name, "roles": list(p.roles), "permissions": sorted(p.permissions)}
+    return {"name": p.name, "ref": p.ref, "roles": list(p.roles), "permissions": sorted(p.permissions)}
 
 
 @app.get("/policy", tags=["meta"])
