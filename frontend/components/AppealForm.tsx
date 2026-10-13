@@ -54,7 +54,9 @@ export default function AppealForm({ photoId, faceId, caseId, defaultCategory, c
     return (
       <div className="text-sm text-slate-300 space-y-1">
         <div>
-          Appeal received. Reference <code className="chip">{done.id}</code> - keep it to check the status.
+          Appeal received. Reference <code className="chip">{done.id}</code> and access token{" "}
+          <code className="chip">{done.access_token}</code> - keep both; the token is shown only once and is
+          needed to check the status.
         </div>
         <div className="text-slate-400">
           Acknowledged by {fmtDate(done.ack_by)} · decision by {fmtDate(done.resolve_by)}
