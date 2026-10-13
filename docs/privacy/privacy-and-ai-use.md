@@ -34,10 +34,11 @@ The same disclosure appears to users before they upload or search (index and sea
 | Uploaded photo | Yes - **re-encoded**: EXIF, GPS, camera/device metadata and filename removed; resized to ≤ 1600 px | Show the photo to authorised users and reviewers | Local disk or private S3 | `PHOTO_RETENTION_DAYS` (90) |
 | Face embedding (512-d) | Yes - biometric | Similarity search | Qdrant | Same as photo |
 | Face bbox, detector score, quality score | Yes | Reviewer evidence, ranking | Qdrant payload | Same as photo |
-| Review status, indexed-at time, uploader name, model name | Yes | Oversight gate, TTL, separation of duties, traceability | Qdrant payload | Same as photo |
+| Review status, indexed-at time, uploader pseudonym, model name | Yes | Oversight gate, TTL, separation of duties, traceability | Qdrant payload | Same as photo |
 | Search reference photo | Yes, temporarily | Reviewer compares it with candidates | Governance DB | Deleted when the case closes; case record `REVIEW_CASE_RETENTION_DAYS` (30) |
-| Appeal text, optional contact | Yes | Recourse | Governance DB | `APPEAL_RETENTION_DAYS` (365) after resolution |
-| Audit log (actor, action, opaque target id, reason) | Yes | Accountability | Governance DB | `AUDIT_LOG_RETENTION_DAYS` (365) |
+| Appeal text | Yes | Recourse | Governance DB | `APPEAL_RETENTION_DAYS` (365) after resolution |
+| Appeal contact (email/phone, optional) | Yes - encrypted | Send the decision | Governance DB | `APPEAL_CONTACT_RETENTION_DAYS` (30) after resolution |
+| Audit log (pseudonymous actor id, action, opaque target id, reason) | Yes | Accountability | Governance DB | `AUDIT_LOG_RETENTION_DAYS` (365) |
 | Original filename, EXIF/GPS, inferred age/gender/ethnicity/emotion | **No** | - | - | - |
 
 Purpose limitation: photos and embeddings are used only to find a person within the collection. They
