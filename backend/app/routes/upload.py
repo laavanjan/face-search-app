@@ -18,7 +18,7 @@ async def upload(
     data = await read_image(file)
     privacy.require_lawful_basis(consent, p, "upload")
     try:
-        photo_id, url, faces, status = pipeline.ingest(data, uploaded_by=p.name)
+        photo_id, url, faces, status = pipeline.ingest(data, uploaded_by=p.ref)
     except Exception as e:  # noqa: BLE001
         raise pipeline_error(e, "No face detected in this photo") from e
     audit.record(p, "photo.upload", photo_id, faces=len(faces), review_status=status)
