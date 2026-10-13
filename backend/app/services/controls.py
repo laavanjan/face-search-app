@@ -9,7 +9,6 @@
 """
 from __future__ import annotations
 
-import hashlib
 import json
 import time
 
@@ -43,16 +42,16 @@ def set_paused(kind: str, paused: bool, actor: Principal, reason: str) -> None:
             "updated_at=excluded.updated_at, reason=excluded.reason",
             (f"{kind}_paused", "1" if paused else "0", actor.ref, time.time(), reason),
         )
-    audit.record(actor, f"control.{kind}.{'pause' if paused else 'resume'}", None, reason=reason)
+    audit.record(actor, f"control.{kind}.{'pause' if paused else 'resume'}", None,
+                 decision="pause" if paused else "resume", reason=reason, evidence={"kind": kind})
 
 
 # --- configuration change gate -------------------------------------------------
 
 
 def _snapshot() -> tuple[str, dict]:
-    snap = get_settings().governance_snapshot()
-    fp = hashlib.sha256(json.dumps(snap, sort_keys=True).encode()).hexdigest()
-    return fp, snap
+    s = get_settings()
+    return s.governance_fingerprint(), s.governance_snapshot()
 
 
 def _approved_baselines() -> list[dict]:
@@ -98,7 +97,8 @@ def approve_config(actor: Principal, change_id: str, reason: str) -> dict:
             "INSERT OR REPLACE INTO config_baselines VALUES (?,?,?,?,?)",
             (fp, json.dumps(snap), change_id, actor.ref, time.time()),
         )
-    audit.record(actor, "config.approve", fp[:12], change_id=change_id, reason=reason)
+    audit.record(actor, "config.approve", fp[:12], decision="approve", reason=reason,
+                 evidence={"change_id": change_id, "fingerprint": fp, "settings": snap})
     return config_status()
 
 
