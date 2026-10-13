@@ -1,16 +1,32 @@
-"""Photo storage abstraction: S3 when AWS is configured, local disk otherwise."""
+"""Photo storage abstraction: S3 when AWS is configured, local disk otherwise.
+
+Objects are private. Photos are only ever served through the authenticated
+`GET /photos/{photo_id}` route; there are no public bucket URLs.
+"""
 from __future__ import annotations
 
 import logging
-import shutil
-from pathlib import Path
-from typing import BinaryIO
+import re
 
 from app.config import get_settings
+from app.services.resilience import aws_config
 
 log = logging.getLogger(__name__)
 
 _s3 = None
+
+# Server-generated ids only: 32 hex chars + image extension. Rejecting
+# anything else also blocks path traversal on the local backend.
+PHOTO_ID_RE = re.compile(r"^[0-9a-f]{32}\.(jpg|jpeg|png|webp)$")
+
+
+def valid_photo_id(photo_id: str) -> bool:
+    return bool(PHOTO_ID_RE.fullmatch(photo_id))
+
+
+def _check(photo_id: str) -> None:
+    if not valid_photo_id(photo_id):
+        raise FileNotFoundError("invalid photo id")
 
 
 def _get_s3():
@@ -26,6 +42,7 @@ def _get_s3():
             aws_access_key_id=s.aws_access_key_id,
             aws_secret_access_key=s.aws_secret_access_key,
             region_name=s.aws_region,
+            config=aws_config(),
         )
     return _s3
 
@@ -35,44 +52,62 @@ def backend_name() -> str:
 
 
 def save(photo_id: str, data: bytes, content_type: str = "image/jpeg") -> str:
-    """Persist bytes under `photo_id`; return a URL/path to fetch it."""
+    """Persist bytes under `photo_id`; return the (authenticated) API path."""
+    _check(photo_id)
     s = get_settings()
     client = _get_s3()
     if client is not None:
-        key = f"photos/{photo_id}"
         client.put_object(
             Bucket=s.s3_bucket_name,
-            Key=key,
+            Key=f"photos/{photo_id}",
             Body=data,
             ContentType=content_type,
         )
-        return f"s3://{s.s3_bucket_name}/{key}"
-    # local
-    dest = s.photo_dir / photo_id
-    dest.write_bytes(data)
-    return f"/photos/{photo_id}"
+    else:
+        (s.photo_dir / photo_id).write_bytes(data)
+    return public_url(photo_id)
 
 
 def load(photo_id: str) -> bytes:
+    _check(photo_id)
     s = get_settings()
     client = _get_s3()
     if client is not None:
-        obj = client.get_object(Bucket=s.s3_bucket_name, Key=f"photos/{photo_id}")
+        try:
+            obj = client.get_object(Bucket=s.s3_bucket_name, Key=f"photos/{photo_id}")
+        except client.exceptions.NoSuchKey as e:
+            raise FileNotFoundError("photo") from e
         return obj["Body"].read()
     path = s.photo_dir / photo_id
     if not path.exists():
-        raise FileNotFoundError(photo_id)
+        raise FileNotFoundError("photo")
     return path.read_bytes()
 
 
-def public_url(photo_id: str) -> str:
+def delete(photo_id: str) -> bool:
+    """Remove the stored object. Returns True if something was deleted."""
+    _check(photo_id)
     s = get_settings()
-    if s.use_s3:
-        return f"https://{s.s3_bucket_name}.s3.{s.aws_region}.amazonaws.com/photos/{photo_id}"
+    client = _get_s3()
+    if client is not None:
+        existed = exists(photo_id)
+        client.delete_object(Bucket=s.s3_bucket_name, Key=f"photos/{photo_id}")
+        return existed
+    path = s.photo_dir / photo_id
+    if path.exists():
+        path.unlink()
+        return True
+    return False
+
+
+def public_url(photo_id: str) -> str:
+    # Always the protected API route, never a direct S3 URL.
     return f"/photos/{photo_id}"
 
 
 def exists(photo_id: str) -> bool:
+    if not valid_photo_id(photo_id):
+        return False
     s = get_settings()
     if s.use_s3:
         try:
