@@ -1,0 +1,41 @@
+# Human oversight roles: who, required qualifications, how assigned (HUMO-01, GOV-05).
+# Enforced in code by backend/app/security.py ROLE_PERMISSIONS. Detail: docs/oversight/human-oversight.md
+document: oversight-roles
+owner: "@laavanjan"
+next_review: 2027-01-14
+roles:
+  service_owner:
+    api_role: admin
+    permissions: [photos:read, photos:delete, system:control, audit:read, appeals:manage]
+    responsibility: "Operate deployment, pause/resume processing, approve config changes, execute deletion, incident commander"
+    qualifications: ["Can operate Docker, Qdrant, FastAPI and rotate keys", "Has read incident-response and change-management policies"]
+    assigned: {primary: "@laavanjan", backup: "@face-search-backup"}   # backup is a PLACEHOLDER
+  human_reviewer:
+    api_role: reviewer
+    permissions: [photos:read, review:decide, appeals:manage]
+    responsibility: "Approve photos for indexing, verify every search candidate, decide appeals"
+    qualifications:
+      - "Completed face-recognition limitations and bias training (automation bias; error rates vary by age, skin tone, lighting, pose; similarity score is not identity)"
+      - "Read human-approval-gates and appeals SLA"
+      - "Two supervised review sessions"
+    assigned: {primary: "@laavanjan (interim)", backup: "reviewer-2"}   # reviewer-2 is a PLACEHOLDER
+  privacy_incident_owner:
+    api_role: admin
+    responsibility: "Deletion, access and objection requests; retention; breach notification"
+    qualifications: ["Knows biometric privacy law in governance/regulatory-mapping.yaml", "Knows retention and breach procedures"]
+    assigned: {primary: "@laavanjan (interim)", backup: "@face-search-backup"}   # PLACEHOLDER backup
+  operator:
+    api_role: operator
+    permissions: [photos:read, photos:write, photos:search]
+    qualifications: ["Has read permitted and prohibited use in GOVERNANCE.md"]
+  viewer:
+    api_role: viewer
+    permissions: [photos:read]
+assignment_process:
+  - "System Owner nominates a primary and a backup for each role"
+  - "Nominee completes the role qualifications; System Owner checks the evidence"
+  - "A second qualified person approves reviewer assignments (separation of duties)"
+  - "Assignment recorded via pull request in docs/oversight/oversight-register.md (assignee, approver, training date, effective date)"
+  - "Only then is an API_KEYS entry with that single role issued; one name per key; multi-role keys need ALLOWED_ROLE_BUNDLES"
+  - "Monthly access review and after every incident; leavers' keys removed the same day"
+separation_of_duties: "A reviewer cannot decide their own upload or search unless ALLOW_SELF_REVIEW=true (services/review.py _no_self_review)"

@@ -1,0 +1,41 @@
+# Applicable regulations and how the system handles each (GOV-10). Detail: docs/compliance/regulatory-applicability.md
+# Engineering assessment, not legal advice.
+document: regulatory-mapping
+owner: "@laavanjan"
+next_review: 2027-01-14
+system: Face Search API (biometric 1:N face identification, private consented collections)
+deployment_jurisdictions: ["EU", "UK"]   # PLACEHOLDER - set to the real deployment jurisdictions
+regulations:
+  - name: EU GDPR / UK GDPR
+    applies: "Yes - biometric data for unique identification is special-category (Art. 9)"
+    handled_by:
+      lawful_basis: "Explicit consent: DATA_PROCESSING_LEGAL_BASIS=consent; /upload and /search refuse without consent=true (services/privacy.py)"
+      erasure: "DELETE /photos/{id} + deletion appeals (services/retention.py)"
+      objection_restriction: "Appeal sets photo 'disputed', excluded from search (services/appeals.py)"
+      storage_limitation: "PHOTO_RETENTION_DAYS=90 TTL sweep"
+      minimisation: "EXIF/GPS/filename stripped (pipeline.prepare); pseudonymous actor ids (services/crypto.py)"
+      security: "Deny-by-default RBAC (security.py); encrypted appeal contacts"
+      dpia: "governance/risk-assessment.yaml"
+    tests: "test_upload_requires_consent_and_is_recorded, test_delete_endpoint_removes_file_and_vectors"
+  - name: EU AI Act
+    applies: "Yes if used in the EU - remote biometric identification is high-risk (Annex III 1(a)); scraping faces is prohibited (Art. 5(1)(e))"
+    handled_by:
+      human_oversight: "Index approval + search-case review gates, stop switch (services/review.py, services/controls.py)"
+      logging: "audit_log (services/audit.py)"
+      prohibited_use: "Scraped images and surveillance banned in GOVERNANCE.md and /privacy"
+    tests: "test_search_results_released_only_after_review, test_stop_prevents_release"
+  - name: Illinois BIPA
+    applies: "Yes if any data subject is in Illinois"
+    handled_by:
+      written_release: "Consent confirmation logged per upload/search"
+      public_retention_schedule: "GET /policy and /privacy; max 90 days (< 3-year limit)"
+      no_sale: "Prohibited in GOVERNANCE.md"
+  - name: California CCPA/CPRA
+    applies: "Yes for covered businesses processing CA residents"
+    handled_by: {notice: "/privacy page", delete: "DELETE /photos/{id}", know: "appeal category access_request"}
+  - name: AWS Service Terms (Rekognition, S3)
+    applies: "Only when AWS is configured (off by default)"
+    handled_by: {opt_out: "AI-services opt-out required first", transfer: "docs/privacy/cross-border-transfer-assessment.md"}
+  - name: InsightFace model licence
+    applies: "Always"
+    handled_by: {record: "governance/model-training-data.yaml"}
