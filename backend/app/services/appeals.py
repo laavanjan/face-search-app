@@ -4,7 +4,9 @@ Anyone - including people who appear in photos but have no account - can
 file an appeal. Filing one about a specific photo immediately restricts it
 (`disputed`: excluded from search and from released matches) until a human
 resolves the appeal. Contact details are optional and only visible to staff
-with appeals:manage.
+with appeals:manage: they are validated, encrypted at rest (services/crypto.py),
+never written to the audit log, and wiped APPEAL_CONTACT_RETENTION_DAYS after
+resolution.
 """
 from __future__ import annotations
 
@@ -15,7 +17,7 @@ from fastapi import HTTPException
 
 from app.config import get_settings
 from app.security import Principal
-from app.services import audit, db, retention, storage, vector_store
+from app.services import audit, crypto, db, retention, storage, vector_store
 
 DAY = 86400
 CATEGORIES = {"incorrect_match", "indexing_objection", "deletion_request", "access_request", "other"}
@@ -50,7 +52,8 @@ def submit(
             "INSERT INTO appeals (id, created_at, category, photo_id, face_id, case_id, reason, contact, "
             "status, ack_by, resolve_by) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
             (
-                appeal_id, now, category, photo_id, face_id, case_id, reason, contact or None,
+                appeal_id, now, category, photo_id, face_id, case_id, reason,
+                crypto.encrypt(contact.strip().lower()) if contact else None,  # encrypted at rest
                 "received", now + s.appeal_ack_days * DAY, now + s.appeal_resolution_days * DAY,
             ),
         )
@@ -87,6 +90,7 @@ def list_all(status: str | None = None, limit: int = 200) -> list[dict]:
         rows = [dict(r) for r in c.execute(q, args).fetchall()]
     now = time.time()
     for r in rows:
+        r["contact"] = crypto.decrypt(r["contact"])  # only appeals:manage reaches this
         r["overdue"] = r["status"] != "resolved" and now > r["resolve_by"]
     return rows
 
@@ -121,7 +125,7 @@ def resolve(appeal_id: str, outcome: str, resolution: str, action: str, actor: P
     with db.tx() as c:
         c.execute(
             "UPDATE appeals SET status='resolved', outcome=?, resolution=?, resolved_by=?, resolved_at=? WHERE id=?",
-            (outcome, resolution, actor.name, time.time(), appeal_id),
+            (outcome, resolution, actor.ref, time.time(), appeal_id),
         )
     audit.record(actor, "appeal.resolve", appeal_id, outcome=outcome, action=action)
     return _row(appeal_id)
