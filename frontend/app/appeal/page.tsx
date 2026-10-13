@@ -7,6 +7,7 @@ import { fmtDate, getAppeal, getPolicy, type Appeal, type Policy } from "@/lib/a
 export default function AppealPage() {
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [lookup, setLookup] = useState("");
+  const [token, setToken] = useState("");
   const [found, setFound] = useState<Appeal | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -58,12 +59,19 @@ export default function AppealPage() {
             value={lookup}
             onChange={(e) => setLookup(e.target.value.trim())}
           />
+          <input
+            className="flex-1 rounded-xl bg-black/30 border border-white/10 p-2"
+            placeholder="Access token"
+            type="password"
+            value={token}
+            onChange={(e) => setToken(e.target.value.trim())}
+          />
           <button
             className="btn-ghost"
-            disabled={!lookup}
+            disabled={!lookup || !token}
             onClick={() => {
               setErr(null);
-              getAppeal(lookup).then(setFound).catch((e) => setErr(e.message));
+              getAppeal(lookup, token).then(setFound).catch(() => setErr("No appeal found for that reference and token."));
             }}
           >
             Look up
