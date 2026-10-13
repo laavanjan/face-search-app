@@ -1,0 +1,47 @@
+# Ethical impacts, ranked most -> least important, each with its mitigation (RISK-03).
+document: ethical-impacts
+owner: "@laavanjan"
+next_review: 2027-01-14
+ranking_method: "severity x likelihood after current controls; rank 1 = highest priority"
+impacts:
+  - rank: 1
+    impact: "Unauthorised biometric collection - faces indexed without consent"
+    mitigation: "Consent required and logged (services/privacy.py); faces pending until reviewer approves (services/review.py); objection via /appeal hides photo immediately; 90-day TTL"
+    residual: medium
+    owner: System Owner
+  - rank: 2
+    impact: "False-positive identification disclosed to a requester"
+    mitigation: "Server-side similarity floor 0.35; results released only after a reviewer approves each candidate and completes the case; 'Report incorrect match' on every result"
+    residual: medium-low
+    owner: Human Reviewer
+  - rank: 3
+    impact: "Unequal error rates across demographic groups"
+    mitigation: "Human verification of every match; fairness evaluation required before any threshold or model change (governance/change-management.yaml)"
+    residual: high (not yet measured - risk R-03)
+    owner: System Owner
+  - rank: 4
+    impact: "Unauthorised access to photos and biometric templates"
+    mitigation: "Deny-by-default RBAC on every router; photos only via authenticated /photos/{id}; log redaction; pseudonymous staff ids"
+    residual: low-medium
+    owner: System Owner
+  - rank: 5
+    impact: "Third-party transfer to AWS"
+    mitigation: "AWS off by default; only EXIF-stripped bytes sent; config gate pauses processing when AWS settings change"
+    residual: low
+    owner: Privacy Owner
+  - rank: 6
+    impact: "Function creep into surveillance or profiling"
+    mitigation: "Prohibited-use policy in UI and GOVERNANCE.md; every search audited; reviewer can stop a case; no attribute models loaded"
+    residual: medium
+    owner: System Owner
+  - rank: 7
+    impact: "Over-retention of personal data"
+    mitigation: "TTL sweep; query image deleted on case close; appeal contacts wiped 30 days after resolution"
+    residual: low
+    owner: Privacy Owner
+  - rank: 8
+    impact: "Service failure blocking recourse"
+    mitigation: "Inference deadline (504), bounded retries, /health, incident runbook"
+    residual: low
+    owner: System Owner
+verification: "backend/tests/test_governance.py"
