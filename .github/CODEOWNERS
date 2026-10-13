@@ -1,5 +1,8 @@
-# Accountable owner for this system (see GOVERNANCE.md). Pair with branch
-# protection on main: "Require review from Code Owners" + required CI checks.
+# Accountable owner for this system (see GOVERNANCE.md).
+# ENFORCED: every pull request must pass the required check `codeowner-approval`
+# (.github/workflows/ci.yml), which fails unless a code owner below authored or
+# approved the change. Branch protection on main (.github/settings.yml) requires
+# code-owner review plus that check before merging.
 *                         @laavanjan
 
 # Governance-sensitive paths - changes need a change record in docs/changes/.
