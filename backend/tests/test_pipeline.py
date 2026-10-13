@@ -1,59 +1,47 @@
-"""Pipeline unit tests using fake face_engine output.
+"""Pipeline unit tests using synthetic face_engine output.
 
-Confirms embeddings roundtrip through the in-memory vector store and that
-the same-person similarity beats a random vector.
+Confirms embeddings roundtrip through the in-memory vector store, that the
+same-person similarity beats a random vector, and that only human-approved
+faces are searchable.
 """
+import io
 from unittest.mock import patch
 
-import numpy as np
 import pytest
 from PIL import Image
-import io
 
-from app.services import face_engine, pipeline, vector_store
-
-
-def _png(w=200, h=200, color=(200, 180, 160)):
-    img = Image.new("RGB", (w, h), color=color)
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
-
-
-def _fake_face(seed: int):
-    rng = np.random.default_rng(seed)
-    v = rng.standard_normal(512).astype(np.float32)
-    v /= np.linalg.norm(v)
-    return face_engine.DetectedFace(
-        bbox=(10, 10, 100, 100),
-        det_score=0.98,
-        embedding=v,
-        quality=0.9,
-    )
+from app.services import pipeline, storage, vector_store
+from tests.fixtures.synthetic_faces import synthetic_face, synthetic_jpeg_with_exif, synthetic_png
 
 
 def test_ingest_and_search_roundtrip():
-    # Ensure we start from a clean in-memory collection
     with patch("app.services.face_engine.analyze") as det:
-        alice = _fake_face(seed=1)
-        det.return_value = [alice]
-        pid, url, faces = pipeline.ingest(_png(), "alice.png")
+        det.return_value = [synthetic_face(seed=1)]
+        pid, url, faces, status = pipeline.ingest(synthetic_png(), uploaded_by="olivia")
         assert len(faces) == 1
         assert pid.endswith(".png")
-        assert url
+        assert url == f"/photos/{pid}"
+        assert status == vector_store.PENDING
 
     with patch("app.services.face_engine.analyze") as det:
-        # Same embedding => must match itself
-        det.return_value = [_fake_face(seed=1)]
-        faces, hits = pipeline.search(_png(), limit=5)
-        assert len(hits) >= 1
+        # Pending faces are not searchable.
+        det.return_value = [synthetic_face(seed=1)]
+        _, hits, _, _ = pipeline.search(synthetic_png(), limit=5)
+        assert not [h for h in hits if h.payload["photo_id"] == pid]
+
+    vector_store.set_photo_status(pid, vector_store.APPROVED)
+
+    with patch("app.services.face_engine.analyze") as det:
+        # Same embedding => must match itself once approved
+        det.return_value = [synthetic_face(seed=1)]
+        _, hits, _, _ = pipeline.search(synthetic_png(), limit=5)
+        assert hits and hits[0].payload["photo_id"] == pid
         assert hits[0].score > 0.99
 
     with patch("app.services.face_engine.analyze") as det:
         # Different embedding => should NOT beat threshold
-        det.return_value = [_fake_face(seed=999)]
-        faces, hits = pipeline.search(_png(), limit=5)
-        # Either no hit above default threshold or a hit with low score.
+        det.return_value = [synthetic_face(seed=999)]
+        _, hits, _, _ = pipeline.search(synthetic_png(), limit=5, threshold=0.0)
         for h in hits:
             assert h.score < 0.5
 
@@ -61,4 +49,31 @@ def test_ingest_and_search_roundtrip():
 def test_ingest_raises_when_no_face():
     with patch("app.services.face_engine.analyze", return_value=[]):
         with pytest.raises(ValueError):
-            pipeline.ingest(_png(), "empty.png")
+            pipeline.ingest(synthetic_png(), uploaded_by="olivia")
+
+
+def test_metadata_stripped_and_filename_not_stored():
+    raw = synthetic_jpeg_with_exif()
+    assert Image.open(io.BytesIO(raw)).getexif()  # fixture really has EXIF
+    with patch("app.services.face_engine.analyze", return_value=[synthetic_face(seed=31)]), \
+         patch("app.services.rekognition.detect_faces", return_value=None) as rek:
+        pid, _, _, _ = pipeline.ingest(raw, uploaded_by="olivia")
+    stored = storage.load(pid)
+    assert not Image.open(io.BytesIO(stored)).getexif()
+    assert b"SyntheticCam" not in stored
+    # Rekognition only ever sees the sanitized bytes.
+    assert b"SyntheticCam" not in rek.call_args.args[0]
+    payload = vector_store.faces_for_photo(pid)[0]
+    assert "filename" not in payload
+    assert set(payload) <= {
+        "face_id", "photo_id", "bbox", "det_score", "quality",
+        "review_status", "indexed_at", "uploaded_by", "model",
+    }
+
+
+def test_synthetic_marker_rejected_in_production(monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "synthetic_data_enabled", False)
+    with pytest.raises(ValueError, match="synthetic_data_rejected"):
+        pipeline.prepare(synthetic_png())
