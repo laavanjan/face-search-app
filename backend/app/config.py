@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     qdrant_collection: str = "faces"
 
     # Model identity. Changing these requires re-evaluation and re-indexing
-    # (docs/governance/change-management.md).
+    # (governance/change-management.yaml).
     face_model_name: str = "buffalo_l"
     face_det_size: int = 640
 
@@ -37,11 +37,21 @@ class Settings(BaseSettings):
     local_photo_dir: str = "./data/photos"
     allowed_origins: str = "http://localhost:3000"
 
-    # --- Access control (docs/oversight/human-oversight.md) ---
-    # Comma-separated "name:role[+role]:token". The token may be written as
+    # development | production. Production rejects raw API tokens (sha256 only).
+    environment: Literal["development", "production"] = "development"
+
+    # --- Access control (governance/oversight-roles.yaml) ---
+    # Comma-separated "name:role:token". The token may be written as
     # "sha256:<hex>" so the raw secret never sits in the env file.
     # Empty = no principals = every protected endpoint answers 401.
     api_keys: str = ""
+    # Multi-role keys are refused unless the exact bundle is allowlisted here,
+    # e.g. "operator+reviewer". Empty = one role per key.
+    allowed_role_bundles: str = ""
+
+    # Secret for audit pseudonyms (HMAC) and appeal-contact encryption.
+    # Derived sub-keys are used for each purpose. Must be set in production.
+    data_encryption_key: str = ""
 
     # --- Human oversight gates ---
     require_index_review: bool = True
@@ -49,23 +59,24 @@ class Settings(BaseSettings):
     search_min_threshold: float = 0.35
     search_max_limit: int = 50
 
-    # --- Privacy (docs/privacy/privacy-and-ai-use.md) ---
+    # --- Privacy (governance/de-identification.yaml) ---
     data_processing_legal_basis: LegalBasis = "consent"
     privacy_notice_url: str = "/privacy"
     privacy_notice_version: str = "2026-10-14"
 
-    # --- Retention (docs/privacy/data-retention-policy.md) ---
+    # --- Retention (governance/data-retention-policy.yaml) ---
     photo_retention_days: int = 90
     review_case_retention_days: int = 30
     appeal_retention_days: int = 365
     audit_log_retention_days: int = 365
+    appeal_contact_retention_days: int = 30  # contact wiped this long after resolution
     retention_sweep_interval_minutes: int = 60
 
     # --- Recourse SLA (docs/oversight/appeals-and-sla.md) ---
     appeal_ack_days: int = 2
     appeal_resolution_days: int = 30
 
-    # Test-only: accept images tagged as synthetic (docs/privacy/synthetic-data.md).
+    # Test-only: accept images tagged as synthetic (governance/synthetic-data-bias-assessment.yaml).
     synthetic_data_enabled: bool = False
 
     governance_db_path: str = "./data/governance.db"
