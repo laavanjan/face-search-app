@@ -1,31 +1,33 @@
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from app.models.schemas import UploadResponse
-from app.services import pipeline
+from app.routes.common import pipeline_error, read_image
+from app.security import Principal, require_permissions
+from app.services import audit, controls, pipeline, privacy
 
 router = APIRouter()
 
-ALLOWED = {"image/jpeg", "image/png", "image/webp"}
-
 
 @router.post("/upload", response_model=UploadResponse)
-async def upload(file: UploadFile = File(...)):
-    if file.content_type not in ALLOWED:
-        raise HTTPException(415, f"Unsupported type {file.content_type}")
-    data = await file.read()
-    if not data:
-        raise HTTPException(400, "Empty file")
-    if len(data) > 15 * 1024 * 1024:
-        raise HTTPException(413, "Max 15MB per photo")
+async def upload(
+    file: UploadFile = File(...),
+    consent: bool = Form(False),
+    p: Principal = Depends(require_permissions("photos:write")),
+):
+    controls.ensure_allowed("indexing")
+    data = await read_image(file)
+    privacy.require_lawful_basis(consent, p, "upload")
     try:
-        photo_id, url, faces = pipeline.ingest(data, file.filename or "upload.jpg")
-    except ValueError as e:
-        if str(e) == "no_face_detected":
-            raise HTTPException(422, "No face detected in this photo") from e
-        raise
+        photo_id, url, faces, status = pipeline.ingest(data, uploaded_by=p.name)
+    except Exception as e:  # noqa: BLE001
+        raise pipeline_error(e, "No face detected in this photo") from e
+    audit.record(p, "photo.upload", photo_id, faces=len(faces), review_status=status)
+    pending = status == "pending"
     return UploadResponse(
         photo_id=photo_id,
         url=url,
         faces=faces,
-        message=f"Indexed {len(faces)} face(s)",
+        review_status=status,
+        message=f"Indexed {len(faces)} face(s)"
+        + (" - awaiting reviewer approval before it is searchable" if pending else ""),
     )
