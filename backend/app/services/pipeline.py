@@ -1,6 +1,6 @@
 """End-to-end orchestration: bytes -> sanitize -> detect -> embed -> store.
 
-Data scope (docs/privacy/privacy-and-ai-use.md):
+Data scope (governance/de-identification.yaml):
   in : one image (JPEG/PNG/WebP, <= 15 MB)
   out: the re-encoded image (EXIF/GPS/device metadata stripped, <= MAX_DIM px)
        + one 512-d embedding, bbox and quality scores per qualifying face.
@@ -19,7 +19,7 @@ from PIL import Image, ImageOps
 
 from app.config import get_settings
 from app.models.schemas import BoundingBox, FaceRecord
-from app.services import face_engine, rekognition, resilience, storage, vector_store
+from app.services import controls, face_engine, rekognition, resilience, storage, vector_store
 
 log = logging.getLogger(__name__)
 
@@ -88,6 +88,7 @@ def _cross_check_with_rekognition(bgr: np.ndarray, clean: bytes) -> dict[int, fl
 def ingest(data: bytes, *, uploaded_by: str) -> tuple[str, str, list[FaceRecord], str]:
     """Index every qualifying face. Faces start as `pending` (excluded from
     search) unless REQUIRE_INDEX_REVIEW is off."""
+    controls.ensure_allowed("indexing")  # human stop switch + config gate, before any processing
     s = get_settings()
     bgr, clean, ext = prepare(data)
     faces = _detect(bgr)
@@ -134,6 +135,7 @@ def ingest(data: bytes, *, uploaded_by: str) -> tuple[str, str, list[FaceRecord]
 def search(data: bytes, limit: int = 20, threshold: float = 0.35):
     """Returns (faces, hits, clean_query_bytes, ext). Hits are candidates
     only; they are released after human review (app/services/review.py)."""
+    controls.ensure_allowed("search")  # human stop switch + config gate, before any processing
     bgr, clean, ext = prepare(data)
     faces = _detect(bgr)
     if not faces:
