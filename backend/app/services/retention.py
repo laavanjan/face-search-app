@@ -1,4 +1,4 @@
-"""Deletion + retention enforcement (docs/privacy/data-retention-policy.md).
+"""Deletion + retention enforcement (governance/data-retention-policy.yaml).
 
 `delete_photo` is the single deletion path. It is used by
 DELETE /photos/{id}, appeal resolution, index-review rejection and the TTL
@@ -46,6 +46,12 @@ def purge_expired(now: float | None = None) -> dict:
         c.execute(
             "UPDATE review_cases SET query_image = NULL WHERE status NOT IN ('pending_review', 'escalated') "
             "AND query_image IS NOT NULL"
+        )
+        # Contact details are only needed to send the decision.
+        c.execute(
+            "UPDATE appeals SET contact = NULL WHERE status = 'resolved' AND contact IS NOT NULL "
+            "AND resolved_at < ?",
+            (now - s.appeal_contact_retention_days * DAY,),
         )
         appeals = c.execute(
             "DELETE FROM appeals WHERE status = 'resolved' AND resolved_at < ?",
