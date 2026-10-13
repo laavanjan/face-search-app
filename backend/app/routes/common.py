@@ -1,8 +1,15 @@
-from fastapi import HTTPException, UploadFile
+from typing import Annotated
 
-from app.services.resilience import DeadlineExceeded
+from fastapi import HTTPException, Path, UploadFile
+
+from app.services.resilience import DeadlineExceeded, is_transient
 
 ALLOWED = {"image/jpeg", "image/png", "image/webp"}
+
+# Path parameters are validated before any handler runs (SAFE-01).
+PhotoId = Annotated[str, Path(pattern=r"^[0-9a-f]{32}\.(jpg|jpeg|png|webp)$")]
+CaseId = Annotated[str, Path(pattern=r"^[0-9a-f]{32}$")]
+FaceId = Annotated[str, Path(pattern=r"^([0-9a-f-]{36}|manual:[0-9a-f]{32}\.(jpg|jpeg|png|webp))$")]
 MAX_BYTES = 15 * 1024 * 1024
 
 
@@ -20,6 +27,10 @@ async def read_image(file: UploadFile) -> bytes:
 def pipeline_error(e: Exception, no_face_msg: str) -> HTTPException:
     if isinstance(e, DeadlineExceeded):
         return HTTPException(504, "Face analysis timed out; please retry or contact the service owner.")
+    if is_transient(e):
+        # Fallback after bounded retries are exhausted: fail closed, nothing is
+        # stored or disclosed, caller is told to retry (SAFE-04).
+        return HTTPException(503, "A backing service is temporarily unavailable; nothing was stored. Please retry.")
     if isinstance(e, ImportError):
         return HTTPException(503, "Face analysis model is not installed on this server.")
     if isinstance(e, ValueError):
