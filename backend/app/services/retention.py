@@ -27,7 +27,8 @@ def delete_photo(photo_id: str, actor: Principal, reason: str) -> dict:
             "DELETE FROM review_candidates WHERE photo_id = ?", (photo_id,)
         ).rowcount
     if vectors or stored:
-        audit.record(actor, "photo.delete", photo_id, reason=reason, vectors=vectors)
+        audit.record(actor, "photo.delete", photo_id, decision="delete", reason=reason,
+                     evidence={"vectors": vectors, "file_deleted": stored, "candidates_removed": cands})
     return {"photo_id": photo_id, "vectors_deleted": vectors, "file_deleted": stored, "candidates_removed": cands}
 
 
