@@ -10,6 +10,8 @@ from __future__ import annotations
 import logging
 import re
 
+from app.tracing import TraceLogFilter
+
 _PATTERNS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"(?i)\b(bearer|x-api-key[:=]?)\s+\S+"), r"\1 <token>"),
     (re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+"), "<email>"),
@@ -49,14 +51,16 @@ class RedactingFilter(logging.Filter):
 
 
 _FILTER = RedactingFilter()
+_TRACE = TraceLogFilter()
 
 
 def configure_logging() -> None:
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s %(levelname)s %(name)s :: %(message)s",
+        format="%(asctime)s %(levelname)s %(name)s trace=%(trace_id)s :: %(message)s",
     )
     for name in ("", "uvicorn", "uvicorn.error", "uvicorn.access"):
         for h in logging.getLogger(name).handlers:
-            if _FILTER not in h.filters:
-                h.addFilter(_FILTER)
+            for f in (_TRACE, _FILTER):
+                if f not in h.filters:
+                    h.addFilter(f)
