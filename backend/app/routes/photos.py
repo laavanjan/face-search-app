@@ -1,11 +1,12 @@
-from typing import Optional
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 
 from app.config import get_settings
+from app.routes.common import PhotoId
 from app.security import Principal, require_permissions
-from app.services import retention, storage, vector_store
+from app.services import provenance, retention, storage, vector_store
 
 router = APIRouter()
 
@@ -13,19 +14,23 @@ DAY = 86400
 
 
 @router.get("/photos/{photo_id}", dependencies=[Depends(require_permissions("photos:read"))])
-def get_photo(photo_id: str):
+def get_photo(photo_id: PhotoId):
     try:
         data = storage.load(photo_id)
     except FileNotFoundError as e:
         raise HTTPException(404, "Photo not found") from e
     ext = photo_id.rsplit(".", 1)[-1].lower()
     media = "image/jpeg" if ext in {"jpg", "jpeg"} else f"image/{ext}"
-    return Response(content=data, media_type=media, headers={"Cache-Control": "private, no-store"})
+    return Response(
+        content=data,
+        media_type=media,
+        headers={"Cache-Control": "private, no-store", "X-Content-Provenance": provenance.PHOTO_HEADER},
+    )
 
 
 @router.delete("/photos/{photo_id}")
 def delete_photo(
-    photo_id: str,
+    photo_id: PhotoId,
     reason: str = Query(..., min_length=3, max_length=500),
     p: Principal = Depends(require_permissions("photos:delete")),
 ):
@@ -39,7 +44,7 @@ def delete_photo(
 
 
 @router.get("/gallery", dependencies=[Depends(require_permissions("photos:read"))])
-def gallery(limit: int = Query(100, ge=1, le=500), status: Optional[str] = None):
+def gallery(limit: int = Query(100, ge=1, le=500), status: Optional[Literal["pending", "approved", "disputed"]] = None):
     ttl = get_settings().photo_retention_days * DAY
     items = []
     for g in vector_store.photos(limit=limit, status=status):
