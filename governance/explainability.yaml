@@ -1,0 +1,24 @@
+# Explainability approach (TRAN-03). Code: backend/app/services/explain.py
+document: explainability
+owner: "@laavanjan"
+next_review: 2027-01-14
+approach: evidence-based explanation (no feature attribution)
+explanation_contents:
+  - "cosine similarity and the threshold in force"
+  - "margin above the threshold and a confidence band (low/medium/high/human) with its meaning"
+  - "face bounding box, detector score, quality score"
+  - "model name, source (model or reviewer), the reviewer's decision and reason"
+  - "standard caveats (not an identification; accuracy varies by group and image quality)"
+endpoints:
+  - "GET /search/cases/{case_id}/explain - requester, released matches only"
+  - "GET /review/cases/{case_id}/explain - reviewer, every candidate"
+  - "SearchMatch.confidence_band + band_meaning on every released match"
+why_this_fits:
+  - "ArcFace embeddings are 512 opaque dimensions; SHAP/saliency over them is unstable and invites over-trust"
+  - "The real decision is a human comparing two faces, so the useful explanation is the comparable evidence plus calibrated score context"
+  - "Explanations use only quantities the system actually used - nothing post-hoc or generated"
+  - "Confidence bands make uncertainty explicit at the point of decision"
+rejected_alternatives:
+  - {method: "pixel saliency (Grad-CAM) on the embedder", reason: "not faithful for metric-learning models; reviewers mistake heat-maps for reasons"}
+  - {method: "SHAP/LIME on embedding dimensions", reason: "dimensions have no human meaning"}
+verification: "backend/tests/test_transparency.py::test_explanations_and_confidence_bands"
