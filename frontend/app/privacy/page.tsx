@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { getPolicy, type Policy } from "@/lib/api";
+import { LIMITATIONS } from "@/lib/limitations";
 
 const BASIS: Record<string, string> = {
   consent: "Consent of the people shown in the photos",
@@ -40,6 +41,16 @@ export default function PrivacyPage() {
           can differ across ages, skin tones, lighting and image quality. That is why a human
           reviewer must confirm every match before it is shown.
         </p>
+      </section>
+
+      <section className="space-y-2">
+        <h2 className="text-lg font-medium text-slate-100">Known limitations</h2>
+        <ul className="list-disc pl-6 space-y-1">
+          {LIMITATIONS.map((l) => (
+            <li key={l}>{l}</li>
+          ))}
+        </ul>
+        <p>Each match shows a confidence band; "low" means the system is uncertain and a mistake is plausible.</p>
       </section>
 
       <section className="space-y-2">
