@@ -21,6 +21,8 @@ export type SearchMatch = {
   bbox: BoundingBox;
   source: "model" | "human";
   reviewed_by?: string | null;
+  confidence_band: "low" | "medium" | "high" | "human";
+  band_meaning: string;
 };
 export type SearchCase = {
   case_id: string;
@@ -30,6 +32,8 @@ export type SearchCase = {
   candidate_count?: number | null;
   matches: SearchMatch[];
   notice: string;
+  limitations?: string[];
+  provenance?: Record<string, unknown> | null;
 };
 export type Health = {
   status: string;
@@ -116,6 +120,7 @@ export type Appeal = {
   contact?: string | null;
   overdue?: boolean;
   photo_restricted?: boolean;
+  access_token?: string;
 };
 
 // ---- auth -------------------------------------------------------------------
@@ -248,7 +253,8 @@ export const submitAppeal = (a: {
   case_id?: string;
   contact?: string;
 }) => post<Appeal>("/appeals", a);
-export const getAppeal = (id: string) => json<Appeal>(`/appeals/${id}`);
+export const getAppeal = (id: string, token: string) =>
+  json<Appeal>(`/appeals/${id}`, { headers: { "X-Appeal-Token": token } });
 export const listAppeals = () => json<{ items: Appeal[] }>("/appeals");
 export const acknowledgeAppeal = (id: string) => post<Appeal>(`/appeals/${id}/acknowledge`, {});
 export const resolveAppeal = (
