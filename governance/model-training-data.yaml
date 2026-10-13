@@ -1,0 +1,31 @@
+# Model provenance, training-data sources, licences and permitted use (PRIV-06).
+# This repository trains nothing. Detail: docs/privacy/training-data.md
+document: model-training-data
+owner: "@laavanjan"
+reviewed: 2026-10-14
+next_review: 2027-01-14
+training_in_this_repo: none     # uploaded photos are inference input only, never training data
+model:
+  name: buffalo_l               # FACE_MODEL_NAME in backend/app/config.py
+  package: insightface==0.7.3   # pinned in backend/requirements.txt
+  source: "InsightFace model zoo, downloaded at first run into ~/.insightface/models/buffalo_l (https://github.com/deepinsight/insightface/tree/master/model_zoo)"
+  checksum: "sha256:PLACEHOLDER-record-on-first-download"   # PLACEHOLDER
+  components_used:
+    - {model: "SCRFD-10GF detector", training_data: "WIDER FACE dataset (per InsightFace model-zoo docs)"}
+    - {model: "ResNet-50 ArcFace recognition", training_data: "WebFace600K, a subset of WebFace260M (per InsightFace model-zoo docs)"}
+  components_not_loaded: ["genderage (CelebA)", "2d106det", "1k3d68"]
+licences:
+  insightface_code: {licence: MIT, url: "https://github.com/deepinsight/insightface/blob/master/LICENSE", effect: "academic and commercial use allowed"}
+  pretrained_weights_buffalo_l: {licence: "non-commercial research use only (InsightFace README)", effect: "commercial use requires a licence from InsightFace or a replacement model"}
+  wider_face: {licence: "research use terms of the dataset authors", effect: "inherited via weights; not redistributed"}
+  webface260m: {licence: "non-commercial research terms of the dataset authors", effect: "inherited via weights; not redistributed"}
+  aws_rekognition: {licence: "AWS Customer Agreement + Service Terms", effect: "opt out of AI-service content use before enabling"}
+review_conclusion: "Permitted for this non-commercial deployment only. Commercial use blocked until licensed (risk R-06)."
+permitted_use:
+  - "Inference on photos in an authorised, consented private collection, non-commercial"
+prohibited_use:
+  - "Commercial deployment of buffalo_l without a commercial licence"
+  - "Redistributing the weights (*.onnx is gitignored)"
+  - "Training, fine-tuning or benchmarking on uploaded photos or stored embeddings"
+  - "Attribute inference (age, gender, ethnicity, emotion), surveillance, identifying strangers"
+inherited_limitation: "Training datasets were collected by third parties from web images; subjects did not consent to this application"
