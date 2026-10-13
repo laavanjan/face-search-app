@@ -1,0 +1,6 @@
+# Offline evaluation + test tooling. Not installed in the production image.
+-r requirements.txt
+fairlearn==0.10.0       # bias measurement + mitigation (app/services/fairness.py)
+pandas==2.2.3
+scikit-learn==1.5.2
+pyyaml==6.0.2           # reads governance/*.yaml thresholds
