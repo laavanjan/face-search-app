@@ -12,9 +12,11 @@ services:
     environment:
       QDRANT_URL: http://qdrant:6333
       LOCAL_PHOTO_DIR: /data/photos
+      GOVERNANCE_DB_PATH: /data/governance/governance.db
       ALLOWED_ORIGINS: http://localhost:3000
     volumes:
       - ./data/photos:/data/photos
+      - ./data/governance:/data/governance
       - ./backend/app:/app/app
     depends_on: [qdrant]
 
