@@ -7,11 +7,14 @@ from app.models.schemas import AppealRequest, AppealResolve
 from app.security import Principal, optional_principal, require_permissions
 from app.services import appeals
 
+# Deliberately public: people shown in photos usually have no account.
+public_router = APIRouter(prefix="/appeals")
+# Staff side; main.py also mounts it behind authentication.
 router = APIRouter(prefix="/appeals")
 manager = require_permissions("appeals:manage")
 
 
-@router.post("", status_code=201)
+@public_router.post("", status_code=201)
 def submit(body: AppealRequest, p: Optional[Principal] = Depends(optional_principal)):
     return appeals.submit(
         body.category, body.reason, body.photo_id, body.face_id, body.case_id, body.contact, p
@@ -23,7 +26,7 @@ def list_appeals(status: Optional[str] = None, _: Principal = Depends(manager)):
     return {"items": appeals.list_all(status)}
 
 
-@router.get("/{appeal_id}")
+@public_router.get("/{appeal_id}")
 def status(appeal_id: str):
     """Public status lookup by the (unguessable) appeal id. No contact details."""
     return appeals.public_view(appeal_id)
