@@ -1,0 +1,26 @@
+# Data retention policy (PRIV-04). Values mirror backend/app/config.py; served publicly at GET /policy.
+# Detail: docs/privacy/data-retention-policy.md
+document: data-retention-policy
+owner: Privacy & Incident Owner (@laavanjan, interim)
+next_review: 2027-01-14
+schedule:
+  - {data: "Uploaded photos (sanitized)", store: "LOCAL_PHOTO_DIR or private S3 photos/", retention_days: 90, setting: PHOTO_RETENTION_DAYS, purpose: "Show matches to authorised users"}
+  - {data: "Face embeddings + payload", store: Qdrant, retention_days: 90, setting: PHOTO_RETENTION_DAYS, purpose: "Similarity search", note: "Deleted together with the photo"}
+  - {data: "Search reference photos", store: governance DB, retention: "until the review case closes", purpose: "Reviewer comparison"}
+  - {data: "Review cases + candidates", store: governance DB, retention_days: 30, setting: REVIEW_CASE_RETENTION_DAYS}
+  - {data: "Resolved appeals", store: governance DB, retention_days: 365, setting: APPEAL_RETENTION_DAYS}
+  - {data: "Appeal contact details (encrypted)", store: governance DB, retention_days: 30, setting: APPEAL_CONTACT_RETENTION_DAYS, note: "after resolution"}
+  - {data: "Audit log (pseudonymous)", store: governance DB, retention_days: 365, setting: AUDIT_LOG_RETENTION_DAYS}
+  - {data: "Application logs", store: log platform, retention_days: 30, note: "personal data redacted at source"}
+deletion_mechanisms:
+  scheduled: "retention.purge_expired() at start-up and every RETENTION_SWEEP_INTERVAL_MINUTES (60); on Lambda schedule python -m app.jobs.retention"
+  on_request: ["DELETE /photos/{photo_id}?reason= (photos:delete)", "Appeal deletion_request -> resolve action=delete_photo"]
+  single_path: "retention.delete_photo removes the stored image, every vector for the photo, and pending review candidates"
+  s3_lifecycle: "When S3 enabled: expire photos/ after PHOTO_RETENTION_DAYS+1, block public access"
+exceptions:
+  legal_hold: "System Owner may pause the sweep for a scope during an incident or claim; recorded in the incident issue; reviewed monthly"
+  backups: "Must expire within 30 days"
+changes: "Changing PHOTO_RETENTION_DAYS trips the config approval gate (governance/change-management.yaml)"
+evidence:
+  tests: [test_retention_ttl_purges_expired_photos, test_delete_endpoint_removes_file_and_vectors, test_appeal_contact_encrypted_and_expires]
+  audit_actions: [retention.sweep, photo.delete]
