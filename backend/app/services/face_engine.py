@@ -36,9 +36,18 @@ def _get_app():
         if _app is None:
             from insightface.app import FaceAnalysis
 
-            log.info("Loading InsightFace buffalo_l...")
-            fa = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
-            fa.prepare(ctx_id=-1, det_size=(640, 640))
+            # Model identity comes from settings so the evaluated artefact is
+            # recorded and any change trips the config-approval gate.
+            s = get_settings()
+            log.info("Loading InsightFace %s...", s.face_model_name)
+            # Only detection + recognition: the pack also ships age/gender and
+            # landmark models, which this service must not run (data minimisation).
+            fa = FaceAnalysis(
+                name=s.face_model_name,
+                allowed_modules=["detection", "recognition"],
+                providers=["CPUExecutionProvider"],
+            )
+            fa.prepare(ctx_id=-1, det_size=(s.face_det_size, s.face_det_size))
             _app = fa
             log.info("InsightFace ready.")
     return _app
