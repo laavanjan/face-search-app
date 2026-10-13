@@ -1,0 +1,32 @@
+# Bias testing plan (FAIR-02, FAIR-01, FAIR-06).
+document: fairness-test-plan
+owner: "@laavanjan"
+next_review: 2027-01-14
+scope: "Face matching (InsightFace buffalo_l embeddings + cosine similarity) at the deployed threshold"
+groups_to_test:
+  skin_tone: ["Fitzpatrick I-II", "Fitzpatrick III-IV", "Fitzpatrick V-VI"]
+  age_band: ["18-30", "31-50", "51+"]
+  gender_presentation: [feminine, masculine, other]
+  intersectional: "all 27 combinations of the three attributes, where sample size allows"
+metrics:
+  - {name: FMR, definition: "false-match rate on within-group impostor pairs", reported_with: "Wilson 95% CI, pair count"}
+  - {name: FNMR, definition: "false-non-match rate on genuine pairs", reported_with: "Wilson 95% CI, pair count"}
+  - {name: FMR ratio, definition: "max/min group FMR per attribute"}
+  - {name: FNMR gap, definition: "max-min group FNMR per attribute"}
+numeric_thresholds:          # mirrored from governance/fairness-thresholds.yaml
+  max_group_fmr: 0.01
+  max_group_fnmr: 0.05
+  max_fmr_ratio: 2.0
+  max_fnmr_gap: 0.03
+  min_genuine_pairs_per_group: 100
+  min_impostor_pairs_per_group: 1000
+dataset:
+  required: "Representative, lawfully sourced, consented evaluation set with self-reported group labels"
+  status: "not yet collected - synthetic-demo used to exercise the pipeline only"   # PLACEHOLDER until real data exists
+  storage: "Outside the repository; supplied to CI as an encrypted artifact via FAIRNESS_MANIFEST"
+procedure:
+  evaluate: "python backend/scripts/evaluate_fairness.py --manifest <path> --out governance/evidence/fairness-results.json"
+  mitigate: "python backend/scripts/fairness_mitigation_experiment.py --manifest <path>"
+  monitor: "python backend/scripts/monitor_fairness.py (weekly, .github/workflows/governance-monitoring.yml)"
+when: ["before any model or threshold change", "weekly monitoring", "after any upheld incorrect_match appeal pattern (>3 per quarter)"]
+results: governance/evidence/fairness-results.json
