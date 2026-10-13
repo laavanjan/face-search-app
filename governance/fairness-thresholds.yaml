@@ -1,0 +1,31 @@
+# Fairness threshold configuration (FAIR-05, FAIR-02). Read by backend/app/services/fairness.py.
+# Values are acceptance limits (policy), not measurements. Changing them is a material change.
+document: fairness-thresholds
+owner: "@laavanjan"
+assessed: 2026-10-14
+next_review: 2027-01-14
+decision_point: "1:N search at the server-side similarity floor SEARCH_MIN_THRESHOLD (0.35), before mandatory human review"
+parity_metric:
+  name: error-rate parity (FMR ratio and FNMR gap across groups)
+  fmr: "false-match rate = impostor pairs scoring >= threshold / all impostor pairs (within-group pairs)"
+  fnmr: "false-non-match rate = genuine pairs scoring < threshold / all genuine pairs"
+  fmr_ratio: "max group FMR / min group FMR, per attribute"
+  fnmr_gap: "max group FNMR - min group FNMR, per attribute"
+groups:                      # compared within each attribute and intersectionally (all three)
+  skin_tone: ["Fitzpatrick I-II", "Fitzpatrick III-IV", "Fitzpatrick V-VI"]
+  age_band: ["18-30", "31-50", "51+"]
+  gender_presentation: [feminine, masculine, other]
+reference_group: "overall population (all groups pooled)"
+labels_source: "Self-reported by consented evaluation participants. Never inferred from images."
+limits:
+  max_group_fmr: 0.01        # no group may exceed 1% false matches at the decision threshold
+  max_group_fnmr: 0.05       # no group may exceed 5% false non-matches
+  max_fmr_ratio: 2.0         # worst/best group FMR
+  max_fnmr_gap: 0.03         # worst - best group FNMR (absolute)
+  min_genuine_pairs_per_group: 100
+  min_impostor_pairs_per_group: 1000
+outcomes:
+  accept: "Real consented data, every group above minimum samples, no limit breached"
+  reject: "Any limit breached - model/threshold change blocked"
+  iterate: "Synthetic data or too few samples - collect data and re-run"
+enforcement: "Change-management requires an 'accept' result before any model or threshold change (governance/change-management.yaml)"
