@@ -8,6 +8,7 @@ import ConsentCheck from "@/components/ConsentCheck";
 import Dropzone from "@/components/Dropzone";
 import { getPolicy, getSearchCase, searchPhoto, type SearchCase } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import { BAND_LABEL, LIMITATIONS } from "@/lib/limitations";
 
 const STATUS_TEXT: Record<string, string> = {
   pending_review: "Waiting for a human reviewer. Candidates are not shown until they are verified.",
@@ -120,6 +121,14 @@ export default function SearchPage() {
             </div>
             <div className="text-slate-400">{STATUS_TEXT[res.status] ?? res.status}</div>
             <div className="text-slate-500 text-xs">{res.notice}</div>
+            <details className="text-xs text-slate-400">
+              <summary className="cursor-pointer">Limitations of these results</summary>
+              <ul className="list-disc pl-5 mt-1 space-y-0.5">
+                {(res.limitations?.length ? res.limitations : LIMITATIONS).map((l) => (
+                  <li key={l}>{l}</li>
+                ))}
+              </ul>
+            </details>
           </div>
 
           {res.matches.length > 0 && (
@@ -128,6 +137,9 @@ export default function SearchPage() {
                 <div key={m.face_id} className="glass rounded-xl overflow-hidden border border-white/5">
                   <AuthImage photoId={m.photo_id} alt="confirmed match" className="aspect-square object-cover w-full" />
                   <div className="p-2 space-y-1 text-xs">
+                    <div className={BAND_LABEL[m.confidence_band]?.tone} title={m.band_meaning}>
+                      {BAND_LABEL[m.confidence_band]?.label}
+                    </div>
                     <div className="flex items-center justify-between text-slate-400">
                       <span>{m.score != null ? `${(m.score * 100).toFixed(1)}% similar` : "added by reviewer"}</span>
                       <span title="verified by">✓ {m.reviewed_by}</span>
