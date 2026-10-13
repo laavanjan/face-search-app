@@ -1,11 +1,13 @@
-"""Deadlines and bounded retries for critical paths.
+"""Reliability controls for critical paths (SAFE-04, HUMO-04).
 
-- `retry` wraps remote calls (Qdrant). Only transient failures are retried:
-  transport errors/timeouts, HTTP 429 and 5xx. Validation errors, auth errors
-  and `no_face_detected` are never retried.
-- `run_with_deadline` bounds model inference so a stuck model load or CPU
-  inference surfaces as a 504 to the caller instead of hanging the request.
-AWS calls use botocore's own retry/timeout config (see aws_config()).
+| Control    | Where | Setting |
+|------------|-------|---------|
+| Timeout    | model inference via run_with_deadline -> 504; Qdrant client timeout; AWS connect/read timeouts (aws_config) | INFERENCE_TIMEOUT_SECONDS=60, QDRANT_TIMEOUT_SECONDS=20, AWS_*_TIMEOUT_SECONDS |
+| Retry      | `retry`: bounded exponential backoff + jitter on transient Qdrant errors only (transport, timeout, 429, 5xx); botocore "standard" mode for AWS | REMOTE_RETRY_ATTEMPTS=3, AWS_MAX_ATTEMPTS=3 |
+| Fallback   | Rekognition failure -> InsightFace-only scoring (rekognition.detect_faces returns None). Qdrant/storage failure after retries -> 503, nothing stored or disclosed (routes/common.pipeline_error) | - |
+| Abstention | No decision when confidence is low: faces below MIN_DET_SCORE or MIN_FACE_SIZE are ignored; no face -> 422; candidates below SEARCH_MIN_THRESHOLD never proposed; every proposed match still needs a human | MIN_DET_SCORE=0.5, MIN_FACE_SIZE=40, SEARCH_MIN_THRESHOLD=0.35 |
+
+Validation errors, auth errors and `no_face_detected` are never retried.
 """
 from __future__ import annotations
 
