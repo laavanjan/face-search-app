@@ -1,0 +1,24 @@
+# How the system can fail and when it is uncertain (TRAN-02).
+# User-facing text: backend/app/services/explain.py (BAND_MEANING, CAVEATS -> API `limitations`,
+# `confidence_band`) and frontend/lib/limitations.ts (search, review and privacy pages).
+document: system-limitations
+owner: "@laavanjan"
+next_review: 2027-01-14
+failure_modes:
+  - {mode: false match, cause: "look-alikes, relatives, twins, low threshold margin", effect: "wrong person's photo proposed", mitigation: "human verification before release; appeal"}
+  - {mode: false non-match, cause: "pose, age gap, occlusion (masks, sunglasses), blur, low light", effect: "real photos missed", mitigation: "manual match by reviewer"}
+  - {mode: missed detection, cause: "faces < 40 px, extreme angle, heavy compression", effect: "face never indexed", mitigation: "upload better photo"}
+  - {mode: wrong query face, cause: "group photo used as reference - largest face is used", effect: "search for the wrong person", mitigation: "reviewer sees reference photo; use single-person reference"}
+  - {mode: unequal accuracy, cause: "training data imbalance", effect: "more errors for some groups", mitigation: "fairness evaluation before changes; human review"}
+  - {mode: service failure, cause: "model stall, Qdrant/AWS outage", effect: "504/503, nothing stored", mitigation: "timeouts, retries, fail closed"}
+uncertainty_signals:
+  confidence_band:
+    low: "margin < 0.10 above threshold - uncertain"
+    medium: "margin 0.10-0.25"
+    high: "margin >= 0.25 - still not proof"
+    human: "added by reviewer, no score"
+  other: ["detector score < 0.7", "face quality < 0.5", "query photo with several faces"]
+abstention: "Below MIN_DET_SCORE / MIN_FACE_SIZE no face is used; below SEARCH_MIN_THRESHOLD nothing is proposed"
+user_facing_text:
+  api: "SearchCaseResponse.limitations, SearchMatch.confidence_band + band_meaning, /search/cases/{id}/explain"
+  ui: "frontend/lib/limitations.ts shown on search results, reviewer console and /privacy"
