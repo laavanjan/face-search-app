@@ -59,6 +59,25 @@ tests that implement it. Checked weekly by `scripts/check_governance.py`.
 | PRIV-08 | De-identification method, validation, guarantee | `docs/privacy/de-identification.md` | tests in §3 of that file |
 | PRIV-09 | Synthetic data: generator, source, bias, limitations | `docs/privacy/synthetic-data.md` | `backend/tests/fixtures/synthetic_faces.py`; `test_synthetic_marker_rejected_in_production` |
 
+## Machine-readable records (`governance/*.yaml`)
+
+Structured versions of the key policies, validated on every PR and weekly by
+`scripts/check_governance.py` (required sections + review dates).
+
+| Record | Controls |
+|---|---|
+| `governance/incident-response.yaml` | GOV-06, GOV-09 (serious incidents) |
+| `governance/change-management.yaml` | GOV-08, GOV-09 |
+| `governance/regulatory-mapping.yaml` | GOV-10 |
+| `governance/risk-assessment.yaml` | RISK-01, RISK-02, GOV-04 |
+| `governance/ethical-impacts.yaml` | RISK-03 |
+| `governance/oversight-roles.yaml` | HUMO-01, GOV-05 |
+| `governance/human-approval-gates.yaml` | HUMO-02, HUMO-06, HUMO-07 |
+| `governance/data-retention-policy.yaml` | PRIV-04 |
+| `governance/de-identification.yaml` | PRIV-01, PRIV-08 |
+| `governance/model-training-data.yaml` | PRIV-06 |
+| `governance/synthetic-data-bias-assessment.yaml` | PRIV-09 |
+
 ## Change records
 
 `docs/changes/` - one file per material or major change ([template](changes/TEMPLATE.md)).
