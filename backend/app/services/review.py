@@ -1,4 +1,4 @@
-r"""Human review gates (docs/oversight/human-oversight.md).
+r"""Human review gates (governance/human-approval-gates.yaml).
 
 Two high-risk paths, both fail closed:
 
@@ -32,7 +32,7 @@ OPEN_STATES = {PENDING_REVIEW, ESCALATED}
 
 
 def _no_self_review(owner: str | None, actor: Principal) -> None:
-    if owner and owner == actor.name and not get_settings().allow_self_review:
+    if owner and owner == actor.ref and not get_settings().allow_self_review:
         raise HTTPException(403, "Separation of duties: a second person must review this.")
 
 
@@ -75,7 +75,7 @@ def create_case(
             (
                 case_id,
                 now,
-                requester.name,
+                requester.ref,
                 status,
                 threshold,
                 query_faces,
@@ -156,7 +156,7 @@ def query_image(case_id: str) -> tuple[bytes, str]:
 def released_matches(case_id: str, viewer: Principal) -> dict:
     """What the requester may see: approved matches, and only once completed."""
     case = _case_row(case_id)
-    if case["requested_by"] != viewer.name and not viewer.can("review:decide"):
+    if case["requested_by"] != viewer.ref and not viewer.can("review:decide"):
         raise HTTPException(403, "Not your case")
     matches = []
     if case["status"] == COMPLETED:
@@ -192,7 +192,7 @@ def decide_candidate(case_id: str, face_id: str, decision: str, actor: Principal
         n = c.execute(
             "UPDATE review_candidates SET decision=?, decided_by=?, decided_at=?, reason=? "
             "WHERE case_id=? AND face_id=?",
-            (new, actor.name, time.time(), reason, case_id, face_id),
+            (new, actor.ref, time.time(), reason, case_id, face_id),
         ).rowcount
     if not n:
         raise HTTPException(404, "Candidate not found")
@@ -213,7 +213,7 @@ def add_manual_match(case_id: str, photo_id: str, actor: Principal, reason: str)
             "INSERT OR REPLACE INTO review_candidates (case_id, face_id, photo_id, score, bbox, source, "
             "decision, decided_by, decided_at, reason) VALUES (?,?,?,?,?,?,?,?,?,?)",
             (case_id, f"manual:{photo_id}", photo_id, None, json.dumps([0, 0, 0, 0]), "human",
-             "approve", actor.name, time.time(), reason),
+             "approve", actor.ref, time.time(), reason),
         )
     audit.record(actor, "search.manual_match", case_id, photo_id=photo_id, reason=reason)
     return get_case(case_id)
@@ -236,14 +236,14 @@ def close_case(case_id: str, outcome: str, actor: Principal, reason: str) -> dic
             c.execute(
                 "UPDATE review_candidates SET decision='reject', decided_by=?, decided_at=?, reason=? "
                 "WHERE case_id=? AND decision != 'reject'",
-                (actor.name, time.time(), reason, case_id),
+                (actor.ref, time.time(), reason, case_id),
             )
         terminal = outcome != ESCALATED
         c.execute(
             "UPDATE review_cases SET status=?, closed_by=?, closed_at=?, close_reason=?"
             + (", query_image=NULL" if terminal else "")
             + " WHERE id=?",
-            (outcome, actor.name, time.time(), reason, case_id),
+            (outcome, actor.ref, time.time(), reason, case_id),
         )
     audit.record(actor, f"search.case.{outcome}", case_id, reason=reason)
     return get_case(case_id)
