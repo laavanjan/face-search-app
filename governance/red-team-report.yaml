@@ -1,0 +1,23 @@
+# Red-team exercise (SAFE-05). Internal exercise, 2026-10-14, by @laavanjan with Claude Code.
+# sev = severity, fix = remediation. Each scenario is reproduced by an automated test so regressions are caught in CI.
+document: red-team-report
+owner: "@laavanjan"
+exercise_date: 2026-10-14
+next_review: 2027-01-14
+scope: "Backend API, auth, review gates, appeals, logging, image pipeline"
+open_findings:
+  - {id: RT-13, issue: "One person holding two single-role keys can bypass separation of duties", fix: "Key issuance review in oversight register; move to SSO identities", status: accepted-risk (R-07)}
+  - {id: RT-14, issue: "Rate limits are per process", fix: "Mirror limits on reverse proxy for multi-worker deployments", status: open}
+scenarios:
+  - {id: RT-01, attack: "Path traversal via photo id (../../etc/passwd)", finding: "Unvalidated photo_id reached the filesystem path", sev: high, fix: "Strict photo-id pattern in storage + route Path validation", status: fixed, test: test_photo_id_path_traversal_rejected}
+  - {id: RT-02, attack: "Call data endpoints without a key", finding: "All endpoints were public", sev: critical, fix: "Router-level auth, deny by default", status: fixed, test: test_every_route_requires_auth_except_allowlist}
+  - {id: RT-03, attack: "Lower threshold to 0 to harvest look-alikes", finding: "Caller-controlled threshold", sev: high, fix: "Server floor 0.35", status: fixed, test: test_threshold_cannot_be_lowered_by_caller}
+  - {id: RT-04, attack: "Approve own search via a second key / multi-role key", finding: "Multi-role keys merged permissions silently", sev: medium, fix: "ALLOWED_ROLE_BUNDLES allowlist; self-review blocked", status: fixed, test: test_role_bundles_need_allowlist_and_production_needs_hashed_tokens}
+  - {id: RT-05, attack: "Brute-force API keys", finding: "No lockout", sev: medium, fix: "20 failures / 10 min lockout", status: fixed, test: test_api_key_bruteforce_locked_out}
+  - {id: RT-06, attack: "Flood public appeals to hide photos", finding: "Unlimited submissions", sev: medium, fix: "5 per client / 10 min; photo ids unguessable", status: fixed, test: test_appeal_flood_rate_limited}
+  - {id: RT-07, attack: "Read someone else's appeal by id", finding: "Status was public by id", sev: medium, fix: "Per-appeal access token", status: fixed, test: test_appeal_restricts_photo_until_resolved}
+  - {id: RT-08, attack: "Decompression-bomb PNG", finding: "Pillow default allows ~178 MP", sev: medium, fix: "40 MP limit, warnings as errors", status: fixed, test: test_decompression_bomb_rejected}
+  - {id: RT-09, attack: "Spoofed content type / corrupt file", finding: "None - rejected", sev: low, status: passed, test: test_upload_rejects_malformed}
+  - {id: RT-10, attack: "Log injection via URL-like format strings", finding: "Redaction corrupted log formatting", sev: low, fix: "Redact args, not format string", status: fixed, test: test_logs_redact_personal_data}
+  - {id: RT-11, attack: "Inject synthetic test fixtures into production", finding: "None - marker rejected", sev: low, status: passed, test: test_synthetic_fixture_injection_rejected_in_production}
+  - {id: RT-12, attack: "Forge X-Request-ID with header injection", finding: "None - invalid ids replaced", sev: low, status: passed, test: test_forged_trace_header_is_not_trusted}
