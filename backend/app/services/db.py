@@ -2,7 +2,7 @@
 operator controls and approved configuration baselines.
 
 Kept separate from Qdrant so oversight records survive a re-index and can be
-retained/purged on their own schedule (docs/privacy/data-retention-policy.md).
+retained/purged on their own schedule (governance/data-retention-policy.yaml).
 """
 from __future__ import annotations
 
