@@ -40,7 +40,7 @@ def run_retention(p: Principal = Depends(owner)):
 @router.get("/audit")
 def audit_log(
     limit: int = Query(200, ge=1, le=1000),
-    action: Optional[str] = None,
+    action: Optional[str] = Query(None, max_length=64, pattern=r"^[a-z_.]+$"),
     _: Principal = Depends(require_permissions("audit:read")),
 ):
     return {"items": audit.recent(limit, action)}
