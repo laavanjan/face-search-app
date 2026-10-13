@@ -39,6 +39,16 @@ def _no_self_review(owner: str | None, actor: Principal) -> None:
 # --- 1. indexing gate ----------------------------------------------------------
 
 
+def _face_evidence(faces: list[dict]) -> dict:
+    return {
+        "faces": [
+            {"face_id": f["face_id"], "det_score": f.get("det_score"), "quality": f.get("quality"), "bbox": f.get("bbox")}
+            for f in faces
+        ],
+        "uploaded_by": faces[0].get("uploaded_by") if faces else None,
+    }
+
+
 def pending_photos(limit: int = 100) -> list[dict]:
     return vector_store.photos(limit=limit, status=vector_store.PENDING)
 
@@ -50,10 +60,10 @@ def decide_photo(photo_id: str, decision: str, actor: Principal, reason: str) ->
     _no_self_review(faces[0].get("uploaded_by"), actor)
     if decision == "approve":
         vector_store.set_photo_status(photo_id, vector_store.APPROVED)
-        audit.record(actor, "index.approve", photo_id, reason=reason, faces=len(faces))
+        audit.record(actor, "index.approve", photo_id, decision="approve", reason=reason, evidence=_face_evidence(faces))
         return {"photo_id": photo_id, "review_status": vector_store.APPROVED}
     if decision == "reject":
-        audit.record(actor, "index.reject", photo_id, reason=reason, faces=len(faces))
+        audit.record(actor, "index.reject", photo_id, decision="reject", reason=reason, evidence=_face_evidence(faces))
         retention.delete_photo(photo_id, actor, f"index_rejected: {reason}")
         return {"photo_id": photo_id, "review_status": "rejected_deleted"}
     raise HTTPException(422, "decision must be approve or reject")
@@ -93,7 +103,14 @@ def create_case(
                 "VALUES (?,?,?,?,?,?,?)",
                 (case_id, str(h.id), pl["photo_id"], float(h.score), json.dumps(pl.get("bbox") or [0, 0, 0, 0]), "model", "pending"),
             )
-    audit.record(requester, "search.case_created", case_id, candidates=len(hits), threshold=threshold)
+    audit.record(
+        requester, "search.case_created", case_id, decision=status,
+        evidence={
+            "threshold_applied": threshold,
+            "query_faces": query_faces,
+            "candidates": [{"face_id": str(h.id), "photo_id": (h.payload or {}).get("photo_id"), "score": round(float(h.score), 4)} for h in hits],
+        },
+    )
     return {"case_id": case_id, "status": status, "candidate_count": len(hits)}
 
 
@@ -196,7 +213,9 @@ def decide_candidate(case_id: str, face_id: str, decision: str, actor: Principal
         ).rowcount
     if not n:
         raise HTTPException(404, "Candidate not found")
-    audit.record(actor, f"search.candidate.{decision}", case_id, face_id=face_id, reason=reason)
+    k = next((c for c in _candidates(case_id) if c["face_id"] == face_id), {})
+    audit.record(actor, f"search.candidate.{decision}", case_id, decision=decision, reason=reason,
+                 evidence={"face_id": face_id, "photo_id": k.get("photo_id"), "score": k.get("score"), "source": k.get("source")})
     return get_case(case_id)
 
 
@@ -215,7 +234,8 @@ def add_manual_match(case_id: str, photo_id: str, actor: Principal, reason: str)
             (case_id, f"manual:{photo_id}", photo_id, None, json.dumps([0, 0, 0, 0]), "human",
              "approve", actor.ref, time.time(), reason),
         )
-    audit.record(actor, "search.manual_match", case_id, photo_id=photo_id, reason=reason)
+    audit.record(actor, "search.manual_match", case_id, decision="approve", reason=reason,
+                 evidence={"photo_id": photo_id, "source": "human"})
     return get_case(case_id)
 
 
@@ -245,7 +265,10 @@ def close_case(case_id: str, outcome: str, actor: Principal, reason: str) -> dic
             + " WHERE id=?",
             (outcome, actor.ref, time.time(), reason, case_id),
         )
-    audit.record(actor, f"search.case.{outcome}", case_id, reason=reason)
+    final = _candidates(case_id)
+    audit.record(actor, f"search.case.{outcome}", case_id, decision=outcome, reason=reason,
+                 evidence={"approved": [k["face_id"] for k in final if k["decision"] == "approve"],
+                           "rejected": [k["face_id"] for k in final if k["decision"] == "reject"]})
     return get_case(case_id)
 
 
@@ -258,5 +281,6 @@ def reopen_case(case_id: str, actor: Principal, reason: str) -> dict:
             "UPDATE review_cases SET status=?, closed_by=NULL, closed_at=NULL, close_reason=NULL WHERE id=?",
             (PENDING_REVIEW, case_id),
         )
-    audit.record(actor, "search.case.reopen", case_id, reason=reason)
+    audit.record(actor, "search.case.reopen", case_id, decision="reopen", reason=reason,
+                 evidence={"previous_status": case["status"]})
     return get_case(case_id)
