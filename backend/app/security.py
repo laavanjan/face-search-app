@@ -120,8 +120,14 @@ def optional_principal(request: Request) -> Principal | None:
 
 
 def current_principal(request: Request) -> Principal:
+    from app.services import ratelimit
+
+    key = ratelimit.client_key(request)
+    ratelimit.check("auth", key, ratelimit.AUTH_FAILURE_LIMIT)  # key-guessing lockout
     p = optional_principal(request)
     if p is None:
+        if _presented_token(request):
+            ratelimit.hit("auth", key)
         raise HTTPException(
             401, "Authentication required", headers={"WWW-Authenticate": "Bearer"}
         )
