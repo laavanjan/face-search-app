@@ -2,13 +2,42 @@ name: CI
 
 on:
   pull_request:
+  pull_request_review:
+    types: [submitted, dismissed]
   push:
     branches: [main]
 
 permissions:
   contents: read
+  pull-requests: read
 
 jobs:
+  # GOV-01: changes need approval from the accountable owner in .github/CODEOWNERS.
+  # A PR passes only if its author is a code owner or a code owner has approved
+  # it. Make this a required status check on main (see .github/settings.yml).
+  codeowner-approval:
+    if: github.event_name == 'pull_request' || github.event_name == 'pull_request_review'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require code-owner approval
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          owners=$(grep -E '^\*\s' .github/CODEOWNERS | grep -oE '@[A-Za-z0-9_-]+' | tr -d '@' | sort -u)
+          echo "Code owners: $owners"
+          if echo "$owners" | grep -qx "$AUTHOR"; then
+            echo "Author $AUTHOR is a code owner."; exit 0
+          fi
+          approvers=$(gh api "repos/${{ github.repository }}/pulls/$PR/reviews"             --jq '[.[] | select(.state=="APPROVED") | .user.login] | unique | .[]')
+          for o in $owners; do
+            if echo "$approvers" | grep -qx "$o"; then echo "Approved by code owner $o."; exit 0; fi
+          done
+          echo "::error::This change needs approval from a code owner: $owners"
+          exit 1
+
   backend-tests:
     runs-on: ubuntu-latest
     defaults:
@@ -45,7 +74,7 @@ jobs:
           python-version: "3.11"
       - run: python scripts/check_governance.py
 
-  # Material changes need a change record (docs/governance/change-management.md).
+  # Material changes need a change record (governance/change-management.yaml).
   change-record:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest

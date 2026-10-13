@@ -64,4 +64,4 @@ jobs:
             --title "Governance monitoring failed ($(date -u +%F))" \
             --label governance-review \
             --assignee laavanjan \
-            --body "The weekly governance monitoring run failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Triage per docs/governance/incident-response.md (P2 if not explained within 2 business days)."
+            --body "The weekly governance monitoring run failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. Triage per governance/incident-response.yaml (P2 if not explained within 2 business days)."
