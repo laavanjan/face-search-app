@@ -5,7 +5,7 @@
 - The config gate fingerprints governance-sensitive settings
   (Settings.governance_snapshot). If the running config differs from the last
   approved baseline, indexing and search fail closed until an admin approves
-  the change with a change-record id (docs/governance/change-management.md).
+  the change with a change-record id (governance/change-management.yaml).
 """
 from __future__ import annotations
 
@@ -41,7 +41,7 @@ def set_paused(kind: str, paused: bool, actor: Principal, reason: str) -> None:
             "INSERT INTO controls (key, value, updated_by, updated_at, reason) VALUES (?,?,?,?,?) "
             "ON CONFLICT(key) DO UPDATE SET value=excluded.value, updated_by=excluded.updated_by, "
             "updated_at=excluded.updated_at, reason=excluded.reason",
-            (f"{kind}_paused", "1" if paused else "0", actor.name, time.time(), reason),
+            (f"{kind}_paused", "1" if paused else "0", actor.ref, time.time(), reason),
         )
     audit.record(actor, f"control.{kind}.{'pause' if paused else 'resume'}", None, reason=reason)
 
@@ -96,14 +96,19 @@ def approve_config(actor: Principal, change_id: str, reason: str) -> dict:
     with db.tx() as c:
         c.execute(
             "INSERT OR REPLACE INTO config_baselines VALUES (?,?,?,?,?)",
-            (fp, json.dumps(snap), change_id, actor.name, time.time()),
+            (fp, json.dumps(snap), change_id, actor.ref, time.time()),
         )
     audit.record(actor, "config.approve", fp[:12], change_id=change_id, reason=reason)
     return config_status()
 
 
 def ensure_allowed(kind: str) -> None:
-    """Fail closed before any biometric processing on a critical path."""
+    """Fail closed before any biometric processing on a critical path.
+
+    Called by every critical path: routes/upload.py and routes/search.py on
+    entry, and again inside pipeline.ingest() / pipeline.search() so no caller
+    can reach face analysis, storage, vectors or review cases while paused."""
+    bootstrap_baseline()
     if not config_status()["approved"]:
         raise HTTPException(
             503, "Configuration change awaiting governance approval; processing is paused."
