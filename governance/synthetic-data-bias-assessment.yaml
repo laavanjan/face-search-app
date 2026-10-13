@@ -1,0 +1,21 @@
+# Synthetic data: source, bias assessment, limitations (PRIV-09). Detail: docs/privacy/synthetic-data.md
+document: synthetic-data-bias-assessment
+owner: "@laavanjan"
+assessed: 2026-10-14
+next_review: 2027-01-14
+generator: backend/tests/fixtures/synthetic_faces.py
+production_guard: "PNG chunk fsa-synthetic=true is rejected unless SYNTHETIC_DATA_ENABLED=true (test-only); test_synthetic_marker_rejected_in_production"
+sources:
+  images: "Pillow flat-colour canvases - no faces, no people, no real photos"
+  embeddings: "NumPy default_rng(seed) standard-normal 512-d vectors, L2-normalised; same seed = same identity"
+  real_data_used: none
+bias_assessment:
+  missing_variation: [skin tone, age, gender presentation, disability, facial hair, glasses, pose, occlusion, lighting, camera, compression, intersectional groups]
+  conclusion: "Synthetic fixtures cannot measure detection rate, false-match or false-non-match rate, or any subgroup difference"
+  risk: "Passing tests could be mistaken for accuracy or fairness evidence"
+  residual_model_risk: "buffalo_l subgroup performance on this population is unmeasured (risk R-03)"
+  decision: "Protected attributes are never inferred (no genderage model loaded)"
+limitations_disclosed:
+  - "Tests prove pipeline mechanics only: round-trip, review gates, access control, deletion, retention, metadata stripping"
+  - "No accuracy, fairness or threshold claim may cite these tests"
+required_before_accuracy_claims: "Representative, lawfully sourced, consented evaluation set with subgroup FMR/FNMR and human approval, recorded in docs/changes/"
