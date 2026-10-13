@@ -1,0 +1,12 @@
+# Output provenance (TRAN-08). Code: backend/app/services/provenance.py
+document: provenance
+owner: "@laavanjan"
+next_review: 2027-01-14
+applicability: "The system generates no images or text, so pixel watermarking (e.g. C2PA manifests on generated media) does not apply. Its outputs are match decisions and indexing results; those carry signed provenance."
+marked_outputs:
+  - {output: "GET /search/cases/{id}", field: provenance, human_reviewed: "true once completed"}
+  - {output: "POST /upload", field: provenance, human_reviewed: false}
+  - {output: "GET /photos/{id}", header: "X-Content-Provenance: origin=user-upload; processing=re-encoded,metadata-stripped; ai-generated=false"}
+provenance_fields: [generator, api_version, model, threshold, config_fingerprint, trace_id, subject, human_reviewed, generated_at, payload_sha256, signature]
+signature: "HMAC-SHA256 over canonical JSON, sub-key 'provenance' derived from DATA_ENCRYPTION_KEY"
+verification: "provenance.verify(payload, block) - backend/tests/test_transparency.py::test_outputs_carry_verifiable_provenance"
