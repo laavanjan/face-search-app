@@ -44,9 +44,10 @@ SAM = {"Authorization": "Bearer sam-token"}
 
 @pytest.fixture(autouse=True)
 def _reset_rate_limits():
-    from app.services import ratelimit
+    from app.services import carbon, ratelimit
 
     ratelimit.reset_for_tests()
+    carbon.reset_for_tests()
 
 
 @pytest.fixture(scope="session")
