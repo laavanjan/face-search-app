@@ -80,6 +80,9 @@ class PhotoDecision(Reason):
 
 class CandidateDecision(Reason):
     decision: Literal["approve", "reject", "reopen"]
+    acknowledge_low_confidence: bool = Field(
+        False, description="Required to approve a candidate in the 'low' confidence band (automation-bias guard)"
+    )
 
 
 class CaseClose(Reason):
