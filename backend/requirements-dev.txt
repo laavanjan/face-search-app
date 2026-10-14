@@ -4,3 +4,4 @@ fairlearn==0.10.0       # bias measurement + mitigation (app/services/fairness.p
 pandas==2.2.3
 scikit-learn==1.5.2
 pyyaml==6.0.2           # reads governance/*.yaml thresholds
+codecarbon==2.7.1       # energy/CO2e tracking of evaluation runs (app/services/carbon.py)
