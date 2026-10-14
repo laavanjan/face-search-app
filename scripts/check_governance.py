@@ -56,7 +56,7 @@ REQUIRED_RECORDS: dict[str, list[str]] = {
     "ethical-impacts.yaml": ["owner", "ranking_method", "impacts"],
     "oversight-roles.yaml": ["owner", "roles", "assignment_process", "separation_of_duties"],
     "human-approval-gates.yaml": ["owner", "high_risk_decision_paths", "human_controls"],
-    "data-retention-policy.yaml": ["owner", "schedule", "deletion_mechanisms"],
+    "data-retention-policy.yaml": ["owner", "schedule", "evidence_access", "deletion_mechanisms"],
     "de-identification.yaml": ["owner", "privacy_guarantee", "methods", "validation"],
     "model-training-data.yaml": ["owner", "model", "licences", "permitted_use", "prohibited_use"],
     "synthetic-data-bias-assessment.yaml": ["owner", "sources", "bias_assessment", "limitations_disclosed"],
@@ -64,7 +64,7 @@ REQUIRED_RECORDS: dict[str, list[str]] = {
     "fairness-thresholds.yaml": ["owner", "parity_metric", "groups", "limits", "outcomes"],
     "fairness-test-plan.yaml": ["owner", "groups_to_test", "metrics", "numeric_thresholds", "procedure"],
     "fairness-mitigation-tradeoffs.yaml": ["owner", "mitigation_evaluated", "tradeoffs", "decision"],
-    "model-card.yaml": ["owner", "model", "system_description", "assumptions", "intended_use", "prohibited_use"],
+    "model-card.yaml": ["owner", "model", "evaluation_approach", "system_description", "assumptions", "intended_use", "forbidden_use"],
     "system-limitations.yaml": ["owner", "failure_modes", "uncertainty_signals", "user_facing_text"],
     "explainability.yaml": ["owner", "approach", "endpoints", "why_this_fits"],
     "safety-requirements.yaml": ["owner", "requirements", "input_validation_by_endpoint"],
@@ -74,6 +74,14 @@ REQUIRED_RECORDS: dict[str, list[str]] = {
     "privacy-notice.yaml": ["owner", "ai_disclosure", "how_data_is_used", "legal_basis"],
     "decision-log-schema.yaml": ["owner", "columns", "rationale_fields", "decision_paths_logged"],
     "provenance.yaml": ["owner", "marked_outputs", "provenance_fields"],
+    "threat-model.yaml": ["owner", "assets", "trust_boundaries", "threats", "gaps"],
+    "llm-usage.yaml": ["owner", "llm_or_agent_paths", "enforcement", "input_schema_validation", "exfiltration_controls"],
+    "supply-chain-security.yaml": ["owner", "lockfiles", "sbom", "secret_scanning", "branch_protection"],
+    "vulnerability-management.yaml": ["owner", "detection", "severity_and_fix_times", "process", "cve_disclosure"],
+    "pretrained-model-assessment.yaml": ["owner", "licence", "known_limitations", "safety_testing_record", "fitness_for_purpose"],
+    "privacy-attack-assessment.yaml": ["owner", "membership_inference", "model_inversion"],
+    "system-overview.yaml": ["owner", "purpose", "intended_users", "scope", "assumptions", "limitations"],
+    "audit-log-integrity.yaml": ["owner", "append_only", "tamper_detection"],
 }
 
 # FAIR-03: the fairness result must hold numeric metrics and a valid outcome.
