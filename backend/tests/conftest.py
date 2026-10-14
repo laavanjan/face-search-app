@@ -17,6 +17,7 @@ os.environ.update(
             ]
         ),
         "ALLOWED_ROLE_BUNDLES": "operator+reviewer",
+        "RATE_LIMIT_PER_MINUTE": "100000",
         "DATA_ENCRYPTION_KEY": "test-only-key",
         "GOVERNANCE_DB_PATH": os.path.join(_tmp, "governance.db"),
         "LOCAL_PHOTO_DIR": os.path.join(_tmp, "photos"),
