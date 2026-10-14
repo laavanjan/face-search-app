@@ -1,0 +1,26 @@
+# Vulnerable user protection (ACC-05).
+document: vulnerable-users
+owner: Privacy & Incident Owner (@laavanjan, interim)
+next_review: 2027-01-14
+groups:
+  children: "People under 18 shown in photos (often cannot consent themselves)"
+  bystanders: "People photographed incidentally who never use the system"
+  people_at_risk: "Those who may be sought by an abuser or stalker"
+  low_literacy_or_disabled: "People who may struggle to appeal or ask for help"
+protections:
+  children:
+    - "Uploader must answer 'Does this photo show anyone under 18?' - no pre-selected answer"
+    - "If yes, parent/guardian consent is required or the upload is refused (422) - routes/upload.py"
+    - "Child photos always go to human review, even when indexing review is turned off - pipeline.ingest"
+    - "Child photos are deleted after MINOR_PHOTO_RETENTION_DAYS=30 instead of 90 - services/retention.py"
+    - "Age is never inferred from faces (no age model loaded); the flag comes only from the uploader"
+    - "Tests: test_minors_need_guardian_consent_and_human_review, test_minor_photos_expire_sooner"
+  people_at_risk:
+    - "Search limited to 'self' or 'consenting_person' purposes; reviewer can stop a fishing search"
+    - "Abuse report (non_consensual_search) immediately excludes the photo from search"
+    - "Requester cannot tell whether someone is in the library before review (no membership leak)"
+  bystanders:
+    - "Objection via /appeal without an account; photo restricted at once"
+  low_literacy_or_disabled:
+    - "Plain language, translations, accessible support form with choice of reply format (governance/accessibility-statement.yaml)"
+content_restrictions: ["no attribute inference", "no scraped/public images", "no surveillance use"]
