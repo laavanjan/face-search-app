@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from app.config import get_settings
@@ -15,6 +17,8 @@ async def search(
     limit: int = Form(20, ge=1, le=200),
     threshold: float = Form(0.35, ge=0.0, le=1.0),
     consent: bool = Form(False),
+    # Workflow-misuse guard (ACC-03): only the two permitted purposes exist.
+    purpose: Literal["self", "consenting_person"] = Form(...),
     p: Principal = Depends(require_permissions("photos:search")),
 ):
     """Opens a review case. Candidates are never returned directly: they are
@@ -30,7 +34,7 @@ async def search(
         faces, hits, clean, ext = pipeline.search(data, limit=limit, threshold=applied)
     except Exception as e:  # noqa: BLE001
         raise pipeline_error(e, "No face detected in reference photo") from e
-    case = review.create_case(p, applied, len(faces), hits, clean, ext)
+    case = review.create_case(p, applied, len(faces), hits, clean, ext, purpose=purpose)
     return SearchCaseResponse(
         case_id=case["case_id"],
         status=case["status"],
