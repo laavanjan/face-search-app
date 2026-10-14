@@ -12,8 +12,10 @@ from app.logging_setup import configure_logging
 from app.models.schemas import HealthResponse
 from app.routes import admin, appeals, photos, review, search, upload
 from app.security import Principal, configured_principals, current_principal, optional_principal
+from app.middleware import AuthGateMiddleware, RateLimitMiddleware
 from app.tracing import TraceMiddleware
-from app.services import controls, crypto, face_engine, privacy, retention, storage, vector_store
+from app.version import APP_VERSION, MANIFEST
+from app.services import audit, controls, crypto, face_engine, privacy, retention, storage, vector_store
 
 configure_logging()
 log = logging.getLogger(__name__)
@@ -39,6 +41,9 @@ async def lifespan(_app: FastAPI):
         log.warning("API_KEYS is empty: every protected endpoint will answer 401.")
     elif any("change-me" in k for k in settings.api_keys.split(",")):
         log.warning("API_KEYS still contains example tokens; replace them before any shared deployment.")
+    chain = audit.verify_chain()
+    if not chain["ok"]:
+        log.error("AUDIT LOG INTEGRITY FAILURE at row %s - treat as a P0 incident.", chain["first_bad_id"])
     controls.bootstrap_baseline()
     if not controls.config_status()["approved"]:
         log.warning("Governance-sensitive config changed: indexing + search paused until an admin approves.")
@@ -59,7 +64,7 @@ async def lifespan(_app: FastAPI):
 
 app = FastAPI(
     title="Face Search API",
-    version="0.2.0",
+    version=APP_VERSION,
     description=(
         "Consent-based face search over a private photo collection. InsightFace + Qdrant, "
         "optional AWS Rekognition/S3. Biometric processing - see GOVERNANCE.md for intended "
@@ -68,7 +73,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# Added last = outermost: every request gets a trace ID before anything else runs.
+# Middleware order (last added = outermost):
+#   Trace -> CORS -> RateLimit -> AuthGate -> routes   (see app/middleware.py)
+app.add_middleware(AuthGateMiddleware)  # deny-by-default auth before routing (SEC-01)
+app.add_middleware(RateLimitMiddleware)  # global per-client request cap (SEC-04)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins or ["http://localhost:3000"],
@@ -91,6 +99,7 @@ app.include_router(review.router, tags=["review"], dependencies=authenticated)
 app.include_router(appeals.router, tags=["appeals"], dependencies=authenticated)
 app.include_router(admin.router, tags=["admin"], dependencies=authenticated)
 app.include_router(appeals.public_router, tags=["appeals"])
+app.include_router(appeals.abuse_router, tags=["appeals"])
 
 
 @app.get("/health", response_model=HealthResponse, tags=["meta"])
@@ -115,6 +124,12 @@ def health(p: Optional[Principal] = Depends(optional_principal)):
 @app.get("/auth/me", tags=["meta"])
 def whoami(p: Principal = Depends(current_principal)):
     return {"name": p.name, "ref": p.ref, "roles": list(p.roles), "permissions": sorted(p.permissions)}
+
+
+@app.get("/version", tags=["meta"])
+def version(_: Principal = Depends(current_principal)):
+    """Pinned code, model, data and prompt versions (app/version_manifest.json)."""
+    return MANIFEST
 
 
 @app.get("/policy", tags=["meta"])
