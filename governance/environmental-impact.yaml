@@ -1,0 +1,24 @@
+# Environmental impact (SOC-03). Code: backend/app/services/carbon.py
+document: environmental-impact
+owner: "@laavanjan"
+next_review: 2027-01-14
+carbon_tracking:
+  library: "codecarbon OfflineEmissionsTracker (requirements-dev.txt), imported in backend/app/services/carbon.py"
+  scope: "Offline evaluation runs: backend/scripts/evaluate_fairness.py, evaluate_robustness.py"
+  output: "governance/evidence/emissions.csv (kWh, kg CO2e per run); grid set with CODECARBON_COUNTRY"
+  status: "Wired in; first measured run pending (codecarbon not installed on the dev machine yet)"   # PLACEHOLDER figures until a tracked run exists
+compute_budget:
+  setting: "INFERENCE_CPU_SECONDS_PER_DAY=3600 (backend/app/config.py)"
+  enforcement: "Face-analysis seconds metered per UTC day; when spent, upload/search return 503 until midnight (resilience.run_with_deadline -> carbon.ensure_budget)"
+  visibility: "GET /admin/controls -> compute_budget"
+  test: test_compute_budget_blocks_processing_when_spent
+footprint_by_design:
+  - "CPU-only inference (CPUExecutionProvider); no GPU, no training or fine-tuning"
+  - "Only detection + recognition models loaded (age/gender/landmark models skipped)"
+  - "Images downscaled to <= 1600 px on the device before upload and again on the server"
+  - "Retention deletes photos and vectors after 90 days - storage does not grow forever"
+  - "Optional cloud services off by default"
+estimate:
+  per_search_or_upload: "~0.3-1 s CPU on a laptop-class core (InsightFace buffalo_l, 640x640)"   # PLACEHOLDER until measured
+  daily_at_approved_scale: "<= 3600 CPU-seconds by budget, i.e. about 0.02-0.05 kWh/day at 20-50 W"
+review_trigger: "Raising the compute budget or adding GPU/cloud inference requires an updated assessment"
