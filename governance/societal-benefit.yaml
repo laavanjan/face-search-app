@@ -1,0 +1,16 @@
+# Societal benefit (SOC-01).
+document: societal-benefit
+owner: "@laavanjan"
+next_review: 2027-01-14
+benefit_type: "Personal and community memory-keeping: finding one's own photos in large shared collections (events, families, community groups) without manual searching, while keeping control over one's own image"
+beneficiaries:
+  primary: "People who want to find, collect or remove photos of themselves in a shared library"
+  secondary: ["families and community groups organising shared photos", "event organisers handling attendee requests to find or delete their photos"]
+  data_subjects: "People can locate photos of themselves to request deletion - a privacy benefit, not only convenience"
+benefit_criteria:          # how we recognise the benefit is real; reviewed quarterly from the transparency report and audit log
+  - {criterion: "Searches completed with at least one human-confirmed match", target: ">= 60% of completed cases", source: "/transparency-report"}
+  - {criterion: "Time saved versus manual browsing", target: "median search-to-release under 2 days", source: "audit_log case_created -> case.completed"}
+  - {criterion: "Self-service deletion/objection handled within SLA", target: "100% within 30 days", source: "/transparency-report median_days_to_resolve"}
+  - {criterion: "Low harm signal", target: "upheld incorrect_match + abuse_report appeals < 5% of searches", source: "/transparency-report"}
+not_a_benefit: "Surveillance, identifying strangers or any use outside the consented purposes - excluded by design"
+review: "If criteria are not met for two quarters, reassess whether the system should continue (governance/risk-assessment.yaml)"
