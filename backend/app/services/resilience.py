@@ -68,7 +68,18 @@ def retry(fn: Callable[[], T], *, op: str, attempts: int | None = None) -> T:
 
 
 def run_with_deadline(fn: Callable[..., T], *args, timeout: float, op: str) -> T:
-    fut = _pool.submit(fn, *args)
+    from app.services import carbon
+
+    carbon.ensure_budget()  # daily compute budget (SOC-03)
+
+    def metered(*a):
+        start = time.perf_counter()
+        try:
+            return fn(*a)
+        finally:
+            carbon.charge(time.perf_counter() - start)
+
+    fut = _pool.submit(metered, *args)
     try:
         return fut.result(timeout=timeout)
     except FutureTimeout as e:
