@@ -103,6 +103,7 @@ export type AppealCategory =
   | "indexing_objection"
   | "deletion_request"
   | "access_request"
+  | "abuse_report"
   | "other";
 export type Appeal = {
   id: string;
@@ -281,6 +282,8 @@ export const setControls = (c: { indexing_paused?: boolean; search_paused?: bool
   post<Controls>("/admin/controls", c);
 export const approveConfig = (change_id: string, reason: string) =>
   post<Controls["config"]>("/admin/config/approve", { change_id, reason });
+export const verifyAudit = () =>
+  json<{ ok: boolean; rows: number; head?: string; first_bad_id?: number }>("/admin/audit/verify");
 export const runRetention = () => post<Record<string, number>>("/admin/retention/run", {});
 export const getAudit = (limit = 100) =>
   json<{ items: { id: number; ts: number; actor: string; roles: string; action: string; target: string | null; detail: Record<string, unknown> }[] }>(
