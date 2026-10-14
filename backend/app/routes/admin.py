@@ -37,6 +37,12 @@ def run_retention(p: Principal = Depends(owner)):
     return retention.purge_expired()
 
 
+@router.get("/audit/verify")
+def verify_audit(_: Principal = Depends(require_permissions("audit:read"))):
+    """Tamper check: recompute the audit-log hash chain (DOC-07)."""
+    return audit.verify_chain()
+
+
 @router.get("/audit")
 def audit_log(
     limit: int = Query(200, ge=1, le=1000),
