@@ -21,7 +21,7 @@ from fastapi import HTTPException
 
 from app.config import get_settings
 from app.security import Principal
-from app.services import audit, db, retention, vector_store
+from app.services import audit, db, explain, retention, vector_store
 
 PENDING_REVIEW = "pending_review"
 ESCALATED = "escalated"
@@ -73,7 +73,8 @@ def decide_photo(photo_id: str, decision: str, actor: Principal, reason: str) ->
 
 
 def create_case(
-    requester: Principal, threshold: float, query_faces: int, hits, query_image: bytes, ext: str
+    requester: Principal, threshold: float, query_faces: int, hits, query_image: bytes, ext: str,
+    purpose: str = "self",
 ) -> dict:
     case_id = uuid.uuid4().hex
     now = time.time()
@@ -110,6 +111,7 @@ def create_case(
         requester, "search.case_created", case_id, decision=status,
         evidence={
             "threshold_applied": threshold,
+            "purpose": purpose,
             "query_faces": query_faces,
             "candidates": [{"face_id": str(h.id), "photo_id": (h.payload or {}).get("photo_id"), "score": round(float(h.score), 4)} for h in hits],
         },
@@ -201,13 +203,25 @@ def _require_open(case: dict) -> None:
         raise HTTPException(409, f"Case is {case['status']}; reopen it first")
 
 
-def decide_candidate(case_id: str, face_id: str, decision: str, actor: Principal, reason: str) -> dict:
+def decide_candidate(
+    case_id: str, face_id: str, decision: str, actor: Principal, reason: str, ack_low_confidence: bool = False
+) -> dict:
     case = _case_row(case_id)
     _require_open(case)
     _no_self_review(case["requested_by"], actor)
     new = {"approve": "approve", "reject": "reject", "reopen": "pending"}.get(decision)
     if not new:
         raise HTTPException(422, "decision must be approve, reject or reopen")
+    if decision == "approve":
+        # Automation-bias guard (ACC-03): approving a match the model itself is
+        # unsure about needs an explicit acknowledgement, not a reflex click.
+        k = next((c for c in _candidates(case_id) if c["face_id"] == face_id), None)
+        if k and explain.confidence_band(k["score"], case["threshold"]) == "low" and not ack_low_confidence:
+            raise HTTPException(
+                422,
+                "Low-confidence candidate: confirm you compared the faces yourself "
+                "(acknowledge_low_confidence=true) before approving.",
+            )
     with db.tx() as c:
         n = c.execute(
             "UPDATE review_candidates SET decision=?, decided_by=?, decided_at=?, reason=? "
