@@ -1,0 +1,19 @@
+# LLM / agent usage statement (SEC-02).
+document: llm-usage
+owner: "@laavanjan"
+next_review: 2027-01-14
+llm_or_agent_paths: none
+statement: >
+  The system contains no LLM, chat, agent or prompt-driven component. Face analysis uses a
+  deterministic vision model (InsightFace) whose inputs are images, not text instructions,
+  so prompt injection has no entry point. All free-text inputs (reasons, appeal text) are
+  stored and shown to humans only; they are never executed or sent to a model.
+enforcement:
+  - "tests/test_security.py::test_no_llm_or_agent_dependencies fails if an LLM SDK (openai, anthropic, langchain, llama-index, transformers, litellm, cohere, google-generativeai) is added to requirements or package.json, or imported in app code"
+  - "Adding any LLM path is a major change (governance/change-management.yaml) and requires this record to be replaced by an injection/exfiltration design"
+input_schema_validation: "Every API input is validated against a pydantic schema or Path/Query/Form constraint before use (governance/safety-requirements.yaml SR-3)"
+exfiltration_controls:
+  - "Responses use explicit response models / allowlisted fields; embeddings never returned (test_api_never_returns_embeddings)"
+  - "Photos only through the authenticated /photos route; no public URLs"
+  - "Logs redact identifiers (logging_setup.RedactingFilter)"
+if_llm_added_requirements: [prompt-injection filtering, schema-validated tool calls, output filtering for personal data, no access to embeddings or photos]
