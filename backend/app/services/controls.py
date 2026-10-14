@@ -118,7 +118,10 @@ def ensure_allowed(kind: str) -> None:
 
 
 def summary() -> dict:
+    from app.services import carbon
+
     return {
+        "compute_budget": carbon.usage(),
         "indexing_paused": is_paused("indexing"),
         "search_paused": is_paused("search"),
         "config": config_status(),
