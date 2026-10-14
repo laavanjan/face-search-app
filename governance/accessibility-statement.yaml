@@ -1,0 +1,32 @@
+# Accessibility statement + support channel (ACC-01, ACC-08). Public page: frontend/app/accessibility/page.tsx
+document: accessibility-statement
+owner: "@laavanjan"
+next_review: 2027-01-14
+target_standard: "WCAG 2.2 level AA"
+language_accessibility:
+  ui_languages: [en, es]          # frontend/locales/*.json; selector in the header; sets <html lang>
+  fallback: "English for any missing string; tests/test_inclusion.py fails if a locale misses a key"
+  other_languages: "POST /support topic=language - a person replies in the requested language where possible"
+  plain_language: "Short plain-language copy first; technical terms behind 'Technical details'"
+disability_accessibility:
+  keyboard: "All controls reachable by keyboard; Dropzone is role=button with Enter/Space; visible :focus-visible outline"
+  screen_readers: "Skip link, landmarks (header/main/footer nav), labelled inputs, role=status/alert live messages, decorative icons aria-hidden"
+  vision: "Contrast raised to slate-200/300 on dark; zoom to 200%; forced-colors mode borders; 44px touch targets"
+  motion: "prefers-reduced-motion disables animations"
+  cognitive: "One task per screen, plain language, required choices never pre-selected"
+device_accessibility:
+  layouts: "Responsive from 320px phones to desktop; viewport allows pinch-zoom"
+  input: "Touch, mouse and keyboard; tap opens the photo picker"
+  low_bandwidth: "Photos shrunk on device before upload (frontend/lib/image.ts)"
+usability_assumptions:
+  - "Users can read the interface language or ask for help in another one"
+  - "Users can provide a photo file; otherwise a person can help via /support"
+  - "Reviewers compare faces visually (known limitation for blind reviewers - listed on the page)"
+support_channel:
+  endpoint: "POST /support (public, no account, rate-limited) - backend/app/routes/support.py"
+  topics: [human_assistance, accessibility, language, cost, technical, other]
+  reply_formats: [email, phone, large_print, easy_read, sign_language_interpreter, other]
+  handled_by: "Reviewers' queue (appeals:manage), same SLA as appeals: acknowledge 2 days, resolve 30 days"
+  channel_accessibility: "The form itself is keyboard/screen-reader accessible, translated, has no CAPTCHA, and lets the person choose how we reply; someone can submit on another person's behalf"
+known_issues: ["two UI languages only", "no automated axe/Lighthouse audit in CI yet"]
+testing: "Manual keyboard + screen-reader pass planned with each release; participant testing is recorded under ACC-02 (T3)"
