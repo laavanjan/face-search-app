@@ -94,7 +94,7 @@ class ManualMatch(Reason):
 
 
 class AppealRequest(BaseModel):
-    category: Literal["incorrect_match", "indexing_objection", "deletion_request", "access_request", "other"]
+    category: Literal["incorrect_match", "indexing_objection", "deletion_request", "access_request", "abuse_report", "other"]
     reason: str = Field(min_length=10, max_length=2000)
     photo_id: Optional[str] = Field(None, pattern=PHOTO_ID)
     face_id: Optional[str] = Field(None, max_length=80, pattern=r"^[0-9a-z:.-]+$")
@@ -105,6 +105,16 @@ class AppealRequest(BaseModel):
         pattern=r"^([^@\s]+@[^@\s]+\.[^@\s]+|\+?[0-9 ()-]{7,20})$",
         description="Optional email or phone; encrypted at rest and used only to reply",
     )
+
+
+class AbuseReport(BaseModel):
+    """Report misuse: surveillance, searching for people without consent,
+    scraped images, harassment. Public; rate-limited."""
+    kind: Literal["non_consensual_search", "surveillance", "scraped_images", "harassment", "account_compromise", "other"]
+    description: str = Field(min_length=10, max_length=2000)
+    photo_id: Optional[str] = Field(None, pattern=PHOTO_ID)
+    case_id: Optional[str] = Field(None, pattern=r"^[0-9a-f]{32}$")
+    contact: Optional[str] = Field(None, max_length=200, pattern=r"^([^@\s]+@[^@\s]+\.[^@\s]+|\+?[0-9 ()-]{7,20})$")
 
 
 class AppealResolve(BaseModel):
