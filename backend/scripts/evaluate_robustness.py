@@ -28,7 +28,7 @@ from PIL import Image, ImageDraw, ImageEnhance, ImageFilter
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.config import get_settings  # noqa: E402
-from app.services import pipeline  # noqa: E402
+from app.services import carbon, pipeline  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -126,7 +126,8 @@ def main(argv=None) -> int:
     else:
         images = [Image.open(p).convert("RGB") for p in sorted(a.images.iterdir()) if p.suffix.lower() in {".jpg", ".jpeg", ".png", ".webp"}]
         dataset, use_model = str(a.images), True
-    results = run(images, use_model)
+    with carbon.track_emissions("robustness-evaluation", ROOT / "governance" / "evidence"):
+        results = run(images, use_model)
     score = {k: v.get("identity_stable_rate", v["preprocess_success_rate"]) for k, v in results.items()}
     worst = min(score, key=score.get) if len(set(score.values())) > 1 else "none (all shifts scored the same)"
     report = {
