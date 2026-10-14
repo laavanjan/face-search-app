@@ -1,0 +1,33 @@
+# Membership inference + model inversion assessment (SEC-07).
+document: privacy-attack-assessment
+owner: Privacy & Incident Owner (@laavanjan, interim)
+assessed: 2026-10-14
+next_review: 2027-01-14
+membership_inference:
+  model_level:
+    question: "Can an attacker tell whether a person was in the model's TRAINING data?"
+    assessment: "Not applicable to our users: the pretrained model is never trained or fine-tuned on uploaded photos. Residual risk sits with the public training sets (WebFace)."
+    risk: low
+  system_level:
+    question: "Can an attacker tell whether a person is IN THE INDEXED LIBRARY by searching their face?"
+    assessment: "Yes by design - a 1:N search reveals membership. This is the main membership risk."
+    risk: high (inherent)
+    mitigations:
+      - "Search needs an authenticated operator key + consent confirmation (privacy.require_lawful_basis)"
+      - "No result is shown until a human reviewer approves; reviewer can stop a fishing search"
+      - "Every search is audit-logged with pseudonymous actor and trace id; hash-chained log"
+      - "Rate limits; abuse-report endpoint; disputed photos excluded from search"
+      - "Empty/no-match cases look the same to the requester until a reviewer completes the case"
+    residual: medium
+model_inversion:
+  question: "Can faces be reconstructed from stored embeddings?"
+  assessment: "Published attacks reconstruct recognisable faces from ArcFace-style templates, so a leaked embedding store is close to a leaked photo store."
+  risk: high if embeddings leak
+  mitigations:
+    - "Embeddings never leave the server: no endpoint returns vectors (tests/test_security.py::test_api_never_returns_embeddings); scroll uses with_vectors=False"
+    - "Qdrant on a private network with QDRANT_API_KEY; RBAC on all photo/gallery routes"
+    - "Retention: vectors deleted with their photo after 90 days or on request"
+    - "Original photos are already stored, so inversion adds little beyond photo access - protect both equally"
+  gaps: ["encryption at rest for Qdrant volume (before production)", "template protection (e.g. cancellable biometrics) not implemented"]
+  residual: medium
+review: "Re-assess on any model change, new API output, or if vectors are ever exported"
