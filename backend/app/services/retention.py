@@ -36,6 +36,7 @@ def purge_expired(now: float | None = None) -> dict:
     s = get_settings()
     now = now or time.time()
     photos = vector_store.expired_photo_ids(now - s.photo_retention_days * DAY)
+    photos |= vector_store.expired_photo_ids(now - s.minor_photo_retention_days * DAY, minors_only=True)
     for pid in photos:
         delete_photo(pid, audit.SYSTEM, "retention_ttl")
     with db.tx() as c:
