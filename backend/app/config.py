@@ -50,6 +50,8 @@ class Settings(BaseSettings):
     # Multi-role keys are refused unless the exact bundle is allowlisted here,
     # e.g. "operator+reviewer". Empty = one role per key.
     allowed_role_bundles: str = ""
+    # Global per-client request cap (app/middleware.py). 0 disables.
+    rate_limit_per_minute: int = 300
 
     # Secret for audit pseudonyms (HMAC) and appeal-contact encryption.
     # Derived sub-keys are used for each purpose. Must be set in production.
