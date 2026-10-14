@@ -1,0 +1,29 @@
+# Over-trust, automation bias and workflow misuse (ACC-03).
+document: human-factors
+owner: "@laavanjan"
+next_review: 2027-01-14
+over_trust:                 # users trusting the AI too much
+  risk: "Treating a similarity suggestion as proof of identity"
+  controls:
+    - "Nothing is shown to the requester until a person verifies it (services/review.py)"
+    - "Plain-language banner on every page: suggestions can be wrong; a person checks every match"
+    - "Every released match shows a confidence band and its meaning, plus limitations (services/explain.py)"
+    - "No percentage-only displays to requesters; wording says 'not proof of who someone is'"
+automation_bias:            # reviewers defaulting to the AI even when wrong
+  risk: "Reviewer approves whatever the model ranks highly"
+  controls:
+    - "Blind first look: model scores hidden in the reviewer console until the reviewer chooses to show them (frontend/app/review/page.tsx)"
+    - "Approving a low-confidence candidate is refused unless acknowledge_low_confidence=true - enforced server-side (review.decide_candidate, test_low_confidence_approval_needs_acknowledgement)"
+    - "A written reason is required for every decision and logged"
+    - "Reviewer training on face-recognition error and bias (governance/oversight-roles.yaml)"
+    - "Separation of duties: reviewer is never the requester"
+    - "Monitoring: approve/reject ratio per reviewer reviewed monthly from the audit log"
+workflow_misuse:            # using the AI outside its scope
+  risk: "Surveillance, identifying strangers, searching people without consent"
+  controls:
+    - "Search requires one of two permitted purposes (self, consenting_person) - any other value is refused (routes/search.py, test_search_requires_a_permitted_purpose)"
+    - "Consent confirmation per upload and search, logged"
+    - "Prohibited-use list shown at the point of use"
+    - "Reviewer can stop a search; abuse reports at POST /abuse-reports"
+    - "Rate limits and audit of every search"
+residual: medium
