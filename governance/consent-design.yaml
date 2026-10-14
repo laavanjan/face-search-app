@@ -1,0 +1,17 @@
+# Consent design - no dark patterns (ACC-07).
+document: consent-design
+owner: Privacy & Incident Owner (@laavanjan, interim)
+next_review: 2027-01-14
+rules:
+  no_pre_ticked_boxes: "Every consent checkbox starts unchecked (useState(false)); minors question and search purpose start with no selection"
+  no_coercion: "Declining consent only means that photo/search is not processed. No account penalty, no repeated nagging, no 'confirmshaming' wording, no countdowns"
+  unbundled: "One purpose per box: indexing consent and search consent are separate; no marketing or other purposes"
+  plain_and_honest: "Plain-language text says exactly what happens (faces analysed, a person checks, can be wrong); AI disclosure on every page; no claim of accuracy or anonymity the system cannot back"
+  equal_prominence: "Privacy link sits inside the consent text; no hidden links or low-contrast fine print"
+  withdrawable: "Consent can be withdrawn any time via /appeal (deletion_request / indexing_objection), no account needed"
+  recorded: "Each confirmation is audit-logged with notice version (services/privacy.py)"
+enforcement:
+  - "Backend refuses upload/search without consent=true (422)"
+  - "tests/test_inclusion.py::test_no_pre_ticked_consent_in_ui fails on pre-checked boxes or a true initial state anywhere in frontend/app or frontend/components"
+  - "tests/test_governance.py::test_upload_requires_consent_and_is_recorded"
+ui: [frontend/components/ConsentCheck.tsx, frontend/app/page.tsx, frontend/app/search/page.tsx]
