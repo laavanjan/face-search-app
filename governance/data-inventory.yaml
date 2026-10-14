@@ -15,6 +15,8 @@ sqlite:
     detail: "structured context; no images/embeddings/contacts"
     trace_id: "request trace id (TRAN-05)"
     rationale: "structured rationale (TRAN-06)"
+    prev_hash: "hash chain link (DOC-07)"
+    row_hash: "tamper-evident row hash (DOC-07)"
   review_cases:
     id: "case key | review, search"
     created_at: "age | 30-day sweep"
