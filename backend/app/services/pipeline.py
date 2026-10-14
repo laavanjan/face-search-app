@@ -38,9 +38,10 @@ SYNTHETIC_MARKER = "fsa-synthetic"
 # unapproved, they raise 503 before any decoding, face analysis, storage,
 # vector write or review case happens.
 
-def ingest(data: bytes, *, uploaded_by: str) -> tuple[str, str, list[FaceRecord], str]:
+def ingest(data: bytes, *, uploaded_by: str, minor: bool = False) -> tuple[str, str, list[FaceRecord], str]:
     """Index every qualifying face. Faces start as `pending` (excluded from
-    search) unless REQUIRE_INDEX_REVIEW is off."""
+    search) unless REQUIRE_INDEX_REVIEW is off. Photos showing a minor always
+    need human approval and expire sooner."""
     controls.ensure_allowed("indexing")  # human stop switch + config gate, before any processing
     s = get_settings()
     bgr, clean, ext = prepare(data)
@@ -52,7 +53,7 @@ def ingest(data: bytes, *, uploaded_by: str) -> tuple[str, str, list[FaceRecord]
     photo_id = f"{uuid.uuid4().hex}.{ext}"
     storage.save(photo_id, clean, content_type="image/png" if ext == "png" else "image/jpeg")
 
-    status = vector_store.PENDING if s.require_index_review else vector_store.APPROVED
+    status = vector_store.PENDING if (s.require_index_review or minor) else vector_store.APPROVED
     now = time.time()
     records: list[FaceRecord] = []
     for i, f in enumerate(faces):
@@ -70,6 +71,7 @@ def ingest(data: bytes, *, uploaded_by: str) -> tuple[str, str, list[FaceRecord]
             review_status=status,
             indexed_at=now,
             uploaded_by=uploaded_by,
+            minor=minor,
         )
         x, y, w, h = f.bbox
         records.append(
