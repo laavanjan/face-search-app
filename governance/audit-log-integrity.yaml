@@ -1,0 +1,20 @@
+# Audit log integrity: append-only + tamper detection (DOC-07).
+# Code: backend/app/services/db.py (_TRIGGERS, row_digest), backend/app/services/audit.py (record, verify_chain)
+document: audit-log-integrity
+owner: "@laavanjan"
+next_review: 2027-01-14
+append_only:
+  mechanism: "SQLite triggers on audit_log"
+  update: "always refused: RAISE(ABORT, 'audit_log is append-only')"
+  delete: "refused unless it is the oldest row - retention can only expire the log from its head"
+  application: "audit.record() is the only writer and only INSERTs"
+tamper_detection:
+  method: "SHA-256 hash chain: row_hash = SHA256(prev_hash, ts, actor, roles, action, target, detail, trace_id, rationale)"
+  genesis: "64 zeros; after head expiry the first remaining row's prev_hash is the anchor"
+  verify: ["GET /admin/audit/verify (audit:read)", "on every API start-up (main.lifespan); failure logged as P0"]
+  detects: [edited rows, inserted rows, removed middle rows, reordered rows]
+  tests: [test_audit_log_is_append_only, test_hash_chain_detects_tampering, test_expiring_head_keeps_chain_valid]
+worm_for_production:
+  recommendation: "Ship audit rows nightly to object storage with S3 Object Lock (compliance mode, 365-day retention) and record the chain head hash with each export"
+  status: "not yet deployed - local SQLite only"   # PLACEHOLDER until a production deployment exists
+access: "read: audit:read (admin role); no role can write except the application"
