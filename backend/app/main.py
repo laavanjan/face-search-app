@@ -10,7 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import get_settings
 from app.logging_setup import configure_logging
 from app.models.schemas import HealthResponse
-from app.routes import admin, appeals, photos, review, search, upload
+from app.routes import admin, appeals, photos, review, search, support, upload
 from app.security import Principal, configured_principals, current_principal, optional_principal
 from app.middleware import AuthGateMiddleware, RateLimitMiddleware
 from app.tracing import TraceMiddleware
@@ -100,6 +100,7 @@ app.include_router(appeals.router, tags=["appeals"], dependencies=authenticated)
 app.include_router(admin.router, tags=["admin"], dependencies=authenticated)
 app.include_router(appeals.public_router, tags=["appeals"])
 app.include_router(appeals.abuse_router, tags=["appeals"])
+app.include_router(support.router, tags=["support"])
 
 
 @app.get("/health", response_model=HealthResponse, tags=["meta"])
