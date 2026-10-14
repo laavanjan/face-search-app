@@ -1,4 +1,4 @@
-# Model card + system description (TRAN-04). Provenance/licences: governance/model-training-data.yaml
+# Model card + system description (TRAN-04, DOC-03). Provenance/licences: governance/model-training-data.yaml
 document: model-card
 owner: "@laavanjan"
 next_review: 2027-01-14
@@ -10,7 +10,11 @@ model:
   task: "Face detection and 1:N face matching by cosine similarity"
   output: "Similarity score in [-1, 1]; candidates >= SEARCH_MIN_THRESHOLD (0.35) proposed to a human"
   training_data: "WIDER FACE (detector), WebFace600K (embedder) - third-party, not trained here"
-  evaluation: "Fairness: governance/evidence/fairness-results.json (synthetic only so far, outcome iterate). Robustness: governance/evidence/robustness-results.json (preprocessing only)"
+evaluation_approach:
+  method: "Per-group and intersectional FMR/FNMR at the deployed threshold with 95% CIs (fairlearn), distribution-shift robustness, adversarial red team, human-review outcome tracking"
+  scripts: [backend/scripts/evaluate_fairness.py, backend/scripts/evaluate_robustness.py, backend/scripts/monitor_fairness.py]
+  acceptance: "governance/fairness-thresholds.yaml limits on consented real data; synthetic data can only yield 'iterate'"
+  current_results: "fairness iterate (synthetic only); robustness preprocessing-only; red team 12 scenarios"
   known_limitations: governance/system-limitations.yaml
 system_description:
   purpose: "Find photos of a consenting person within a private, authorised photo collection"
@@ -28,7 +32,7 @@ assumptions:
 intended_use:
   - "Personal or organisational photo libraries with documented consent"
   - "Finding photos of oneself or of consenting people"
-prohibited_use:
+forbidden_use:
   - "Surveillance, tracking or CCTV"
   - "Identifying strangers or people who have not consented"
   - "Scraped or public-source images"
