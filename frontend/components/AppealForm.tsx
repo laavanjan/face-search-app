@@ -8,6 +8,7 @@ const CATEGORIES: { value: AppealCategory; label: string }[] = [
   { value: "indexing_objection", label: "I object to my face being indexed" },
   { value: "deletion_request", label: "Delete a photo of me" },
   { value: "access_request", label: "Tell me what data you hold about me" },
+  { value: "abuse_report", label: "Report misuse (e.g. someone searched for me without consent)" },
   { value: "other", label: "Something else" },
 ];
 
