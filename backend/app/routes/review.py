@@ -53,7 +53,7 @@ def case_query_image(case_id: CaseId, _: Principal = Depends(reviewer)):
 
 @router.post("/cases/{case_id}/candidates/{face_id}")
 def decide_candidate(case_id: CaseId, face_id: FaceId, body: CandidateDecision, p: Principal = Depends(reviewer)):
-    return review.decide_candidate(case_id, face_id, body.decision, p, body.reason)
+    return review.decide_candidate(case_id, face_id, body.decision, p, body.reason, body.acknowledge_low_confidence)
 
 
 @router.post("/cases/{case_id}/manual-match")
