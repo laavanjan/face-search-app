@@ -94,6 +94,19 @@ Structured versions of the key policies, validated on every PR and weekly by
 | `backend/tests/test_edge_cases.py` | SAFE-02 |
 | `governance/robustness-evaluation.yaml` | SAFE-03 (`backend/scripts/evaluate_robustness.py`, `tests/test_robustness.py`) |
 | `governance/red-team-report.yaml` | SAFE-05 |
+| `governance/threat-model.yaml` + `backend/app/middleware.py` | SEC-01 |
+| `governance/llm-usage.yaml` | SEC-02 (no LLM paths; enforced by `tests/test_security.py`) |
+| `governance/supply-chain-security.yaml` + `.github/workflows/security.yml` + `.gitleaks.toml` | SEC-03 |
+| `backend/app/middleware.py` (RateLimitMiddleware) + `POST /abuse-reports` | SEC-04 |
+| `governance/vulnerability-management.yaml` + `SECURITY.md` + `.github/dependabot.yml` | SEC-05 |
+| `governance/pretrained-model-assessment.yaml` | SEC-06 |
+| `governance/privacy-attack-assessment.yaml` | SEC-07 |
+| `governance/system-overview.yaml` | DOC-01 |
+| `governance/model-card.yaml` | DOC-03 |
+| `governance/decision-log-schema.yaml` | DOC-04 |
+| `backend/app/version_manifest.json` + `CHANGELOG.md` + `GET /version` | DOC-05 |
+| `governance/data-retention-policy.yaml` (`evidence_access`) | DOC-06 |
+| `governance/audit-log-integrity.yaml` + `GET /admin/audit/verify` | DOC-07 |
 
 ## Change records
 
