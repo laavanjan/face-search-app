@@ -1,0 +1,28 @@
+{
+  "manifest": "face-search version manifest (DOC-05). Single source of truth; tests/test_security.py fails if code, requirements or config drift from it.",
+  "code": {
+    "version": "0.2.1",
+    "git_tag": "v0.2.1",
+    "changelog": "CHANGELOG.md",
+    "frontend_version": "0.2.1"
+  },
+  "model": {
+    "name": "buffalo_l",
+    "package": "insightface==0.7.3",
+    "runtime": "onnxruntime==1.19.2",
+    "embedding_dim": 512,
+    "det_size": 640,
+    "weights_sha256": "PLACEHOLDER-record-on-first-download"
+  },
+  "data": {
+    "governance_db_schema_version": 3,
+    "vector_collection": "faces",
+    "vector_payload_schema": "v2: photo_id, bbox, det_score, quality, review_status, indexed_at, uploaded_by, model",
+    "fairness_evaluation_dataset": "synthetic-demo-v1 (seed 7) - no real evaluation set yet",
+    "fairness_thresholds": "governance/fairness-thresholds.yaml (assessed 2026-10-14)"
+  },
+  "prompts": {
+    "version": "none",
+    "note": "The system uses no LLM or prompt templates (governance/llm-usage.yaml)."
+  }
+}
