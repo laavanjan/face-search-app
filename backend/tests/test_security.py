@@ -146,7 +146,7 @@ def test_api_never_returns_embeddings(client):
         up = client.post("/upload", files={"file": ("p", synthetic_png(), "image/png")}, data={"consent": "true"}, headers=OPERATOR)
         pid = up.json()["photo_id"]
         client.post(f"/review/photos/{pid}", json={"decision": "approve", "reason": "ok ok"}, headers=REVIEWER)
-        case = client.post("/search", files={"file": ("q", synthetic_png(), "image/png")}, data={"consent": "true"}, headers=OPERATOR).json()["case_id"]
+        case = client.post("/search", files={"file": ("q", synthetic_png(), "image/png")}, data={"consent": "true", "purpose": "self"}, headers=OPERATOR).json()["case_id"]
     responses = [
         up.json(),
         client.get("/gallery", headers=VIEWER).json(),
@@ -184,9 +184,9 @@ def test_search_does_not_leak_membership(client):
     with patch("app.services.face_engine.analyze", return_value=[synthetic_face(1401)]):
         pid = client.post("/upload", files={"file": ("p", synthetic_png(), "image/png")}, data={"consent": "true"}, headers=OPERATOR).json()["photo_id"]
         client.post(f"/review/photos/{pid}", json={"decision": "approve", "reason": "ok ok"}, headers=REVIEWER)
-        present = client.post("/search", files={"file": ("q", synthetic_png(), "image/png")}, data={"consent": "true"}, headers=OPERATOR).json()
+        present = client.post("/search", files={"file": ("q", synthetic_png(), "image/png")}, data={"consent": "true", "purpose": "self"}, headers=OPERATOR).json()
     with patch("app.services.face_engine.analyze", return_value=[synthetic_face(1402)]):
-        absent = client.post("/search", files={"file": ("q", synthetic_png(), "image/png")}, data={"consent": "true"}, headers=OPERATOR).json()
+        absent = client.post("/search", files={"file": ("q", synthetic_png(), "image/png")}, data={"consent": "true", "purpose": "self"}, headers=OPERATOR).json()
     strip = lambda r: {k: v for k, v in r.items() if k != "case_id"}  # noqa: E731
     assert strip(present) == strip(absent)
     for r in (present, absent):
