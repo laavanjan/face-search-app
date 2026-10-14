@@ -8,6 +8,7 @@ import {
   getAudit,
   getControls,
   runRetention,
+  verifyAudit,
   setControls,
   type Controls,
 } from "@/lib/api";
@@ -133,7 +134,19 @@ export default function AdminPage() {
 
       {audit && (
         <section className="glass rounded-2xl p-6 space-y-2 text-xs">
-          <h2 className="text-lg font-medium">Audit log (latest 100)</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-medium">Audit log (latest 100)</h2>
+            <button
+              className="btn-ghost"
+              onClick={() =>
+                verifyAudit()
+                  .then((v) => setMsg(v.ok ? `Audit chain intact (${v.rows} rows)` : `INTEGRITY FAILURE at row ${v.first_bad_id} - treat as P0`))
+                  .catch((e) => setErr(e.message))
+              }
+            >
+              Verify integrity
+            </button>
+          </div>
           <div className="max-h-96 overflow-auto">
             <table className="w-full">
               <tbody>
