@@ -1,0 +1,21 @@
+# Secret scanning config for .github/workflows/security.yml (SEC-03).
+# Uses the default gitleaks rules; the allowlist covers only documented, non-secret
+# placeholders and test fixtures.
+title = "face-search gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Placeholders and test-only tokens"
+regexes = [
+  '''change-me[-a-z]*''',                  # example values in backend/.env.example
+  '''(op|rev|admin|view|sam)-token''',     # backend/tests/conftest.py test keys
+  '''test-only-key''',
+  '''ci-monitor-token''',
+  '''PLACEHOLDER[-A-Za-z-]*''',
+]
+paths = [
+  '''backend/tests/''',
+  '''governance/evidence/''',
+]
