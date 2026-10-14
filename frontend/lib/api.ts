@@ -194,18 +194,30 @@ export async function caseQueryImageUrl(case_id: string): Promise<string> {
 
 // ---- index + search ---------------------------------------------------------
 
-export function uploadPhoto(file: File, consent: boolean): Promise<UploadResponse> {
+export function uploadPhoto(
+  file: File,
+  consent: boolean,
+  minors: { present: boolean; guardianConsent: boolean } = { present: false, guardianConsent: false }
+): Promise<UploadResponse> {
   const fd = new FormData();
   fd.append("file", file);
   fd.append("consent", String(consent));
+  fd.append("minors_present", String(minors.present));
+  fd.append("guardian_consent", String(minors.guardianConsent));
   return json("/upload", { method: "POST", body: fd });
 }
 
 export function searchPhoto(
   file: File,
-  { limit = 24, threshold = 0.35, consent = false }: { limit?: number; threshold?: number; consent?: boolean } = {}
+  {
+    limit = 24,
+    threshold = 0.35,
+    consent = false,
+    purpose,
+  }: { limit?: number; threshold?: number; consent?: boolean; purpose: "self" | "consenting_person" }
 ): Promise<SearchCase> {
   const fd = new FormData();
+  fd.append("purpose", purpose);
   fd.append("file", file);
   fd.append("limit", String(limit));
   fd.append("threshold", String(threshold));
@@ -233,8 +245,14 @@ export const decideCandidate = (
   id: string,
   face_id: string,
   decision: "approve" | "reject" | "reopen",
-  reason: string
-) => post<ReviewCase>(`/review/cases/${id}/candidates/${encodeURIComponent(face_id)}`, { decision, reason });
+  reason: string,
+  acknowledge_low_confidence = false
+) =>
+  post<ReviewCase>(`/review/cases/${id}/candidates/${encodeURIComponent(face_id)}`, {
+    decision,
+    reason,
+    acknowledge_low_confidence,
+  });
 export const manualMatch = (id: string, photo_id: string, reason: string) =>
   post<ReviewCase>(`/review/cases/${id}/manual-match`, { photo_id, reason });
 export const closeCase = (
@@ -264,6 +282,18 @@ export const resolveAppeal = (
   resolution: string,
   action: "none" | "delete_photo" | "restore_photo"
 ) => post<Appeal>(`/appeals/${id}/resolve`, { outcome, resolution, action });
+
+// ---- support + transparency (public) ----------------------------------------
+
+export type SupportRequest = {
+  topic: "human_assistance" | "accessibility" | "language" | "cost" | "technical" | "other";
+  message: string;
+  preferred_format: "email" | "phone" | "large_print" | "easy_read" | "sign_language_interpreter" | "other";
+  language: string;
+  contact?: string;
+};
+export const submitSupport = (r: SupportRequest) => post<Appeal>("/support", r);
+export const getTransparency = () => json<Record<string, unknown>>("/transparency-report");
 
 // ---- admin ------------------------------------------------------------------
 
