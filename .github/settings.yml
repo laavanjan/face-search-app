@@ -4,6 +4,7 @@
 branches:
   - name: main
     protection:
+      # PR review before merge (SEC-03, GOV-01)
       required_pull_request_reviews:
         required_approving_review_count: 1
         require_code_owner_reviews: true
@@ -16,5 +17,8 @@ branches:
           - governance-docs
           - change-record
           - codeowner-approval
+          - secret-scan
+          - dependency-audit
+          - lockfile
       enforce_admins: false
       restrictions: null
