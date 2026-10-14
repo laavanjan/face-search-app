@@ -23,9 +23,9 @@ import json
 from app.config import get_settings
 from app.services import crypto
 from app.tracing import current_trace_id
+from app.version import APP_VERSION as API_VERSION
 
 GENERATOR = "face-search-api"
-API_VERSION = "0.2.1"
 PHOTO_HEADER = "origin=user-upload; processing=re-encoded,metadata-stripped; ai-generated=false"
 
 
