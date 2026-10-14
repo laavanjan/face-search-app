@@ -1,0 +1,28 @@
+# Automated dependency updates (SEC-05). Policy: governance/vulnerability-management.yaml.
+# Security updates are opened as soon as an advisory is published; version updates weekly.
+version: 2
+updates:
+  - package-ecosystem: pip
+    directory: /backend
+    schedule: {interval: weekly, day: monday}
+    open-pull-requests-limit: 5
+    labels: [dependencies, security-review]
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule: {interval: weekly, day: monday}
+    open-pull-requests-limit: 5
+    labels: [dependencies, security-review]
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: {interval: weekly, day: monday}
+    labels: [dependencies]
+  - package-ecosystem: docker
+    directory: /backend
+    schedule: {interval: weekly, day: monday}
+    labels: [dependencies]
