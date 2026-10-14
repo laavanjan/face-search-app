@@ -38,7 +38,8 @@ def test_decisions_logged_with_trace_and_structured_rationale(client):
         assert r["trace_id"]
         assert set(audit.RATIONALE_FIELDS) <= set(r["rationale"])
     created = next(r for r in rows if r["action"] == "search.case_created")
-    assert created["rationale"]["evidence"]["candidates"][0]["score"] > 0.99  # reconstructable
+    assert created["rationale"]["inputs"]["candidates"][0]["score"] > 0.99  # inputs recorded
+    assert created["rationale"]["output"] == {"decision": "pending_review", "action": "search.case_created", "target": case}
 
 
 def test_explanations_and_confidence_bands(client):
