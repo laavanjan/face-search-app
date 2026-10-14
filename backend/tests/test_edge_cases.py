@@ -16,6 +16,7 @@ from tests.fixtures.synthetic_faces import synthetic_face, synthetic_png
 
 def _post(client, path, data: bytes, ctype="image/png", headers=OPERATOR, **form):
     form.setdefault("consent", "true")
+    form.setdefault("purpose", "self")
     with patch("app.services.face_engine.analyze", return_value=[synthetic_face(901)]):
         return client.post(path, files={"file": ("x", data, ctype)}, data=form, headers=headers)
 
