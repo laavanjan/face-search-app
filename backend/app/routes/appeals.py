@@ -15,13 +15,14 @@ from typing import Annotated, Literal, Optional
 
 from fastapi import APIRouter, Depends, Header, Path
 
-from app.models.schemas import AppealRequest, AppealResolve
+from app.models.schemas import AbuseReport, AppealRequest, AppealResolve
 from app.security import Principal, optional_principal, require_permissions
 from app.services import appeals, ratelimit
 
 AppealId = Annotated[str, Path(pattern=r"^[0-9a-f]{32}$")]
 
 public_router = APIRouter(prefix="/appeals")
+abuse_router = APIRouter()
 router = APIRouter(prefix="/appeals")
 manager = require_permissions("appeals:manage")
 
@@ -31,6 +32,15 @@ def submit(body: AppealRequest, p: Optional[Principal] = Depends(optional_princi
     """Returns the appeal with a one-time `access_token` for status lookups."""
     return appeals.submit(
         body.category, body.reason, body.photo_id, body.face_id, body.case_id, body.contact, p
+    )
+
+
+@abuse_router.post("/abuse-reports", status_code=201, dependencies=[Depends(ratelimit.limit_appeal_submissions)])
+def report_abuse(body: AbuseReport, p: Optional[Principal] = Depends(optional_principal)):
+    """Abuse reporting endpoint (SEC-04). Lands in the staff appeals queue as
+    category abuse_report; a referenced photo is restricted immediately."""
+    return appeals.submit(
+        "abuse_report", f"[{body.kind}] {body.description}", body.photo_id, None, body.case_id, body.contact, p
     )
 
 
