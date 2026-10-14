@@ -83,6 +83,10 @@ function CaseDetail({ id, onChange, take }: Take & { id: string; onChange: () =>
   const [c, setC] = useState<ReviewCase | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [manual, setManual] = useState("");
+  // Automation-bias guards (ACC-03): scores stay hidden until the reviewer has
+  // looked at the faces, and low-confidence approvals need an explicit check.
+  const [showScores, setShowScores] = useState(false);
+  const [acked, setAcked] = useState<Record<string, boolean>>({});
 
   const load = useCallback(() => {
     getCase(id).then(setC).catch((e) => setErr(e.message));
@@ -109,6 +113,9 @@ function CaseDetail({ id, onChange, take }: Take & { id: string; onChange: () =>
         <span className="chip">status · {c.status}</span>
         <span className="chip">requested by · {c.requested_by}</span>
         <span className="chip">threshold · {c.threshold.toFixed(2)}</span>
+        <button className="btn-ghost !py-1 text-xs" aria-pressed={showScores} onClick={() => setShowScores(!showScores)}>
+          {showScores ? "Hide model scores" : "Show model scores"}
+        </button>
         <span className="chip">{fmtDate(c.created_at)}</span>
       </div>
       {err && <div className="text-sm text-red-300">{err}</div>}
@@ -133,12 +140,27 @@ function CaseDetail({ id, onChange, take }: Take & { id: string; onChange: () =>
             >
               <AuthImage photoId={k.photo_id} alt="candidate" className="aspect-square object-cover w-full" />
               <div className="p-2 text-xs space-y-1 text-slate-400">
-                <div>
-                  {k.score != null ? `${(k.score * 100).toFixed(1)}% similar` : "manual"} · {k.decision}
-                </div>
-                <div className={BAND_LABEL[bandFor(k.score, c.threshold)].tone}>
-                  {BAND_LABEL[bandFor(k.score, c.threshold)].label}
-                </div>
+                <div>{k.decision}</div>
+                {showScores ? (
+                  <>
+                    <div>{k.score != null ? `${(k.score * 100).toFixed(1)}% similar` : "manual"}</div>
+                    <div className={BAND_LABEL[bandFor(k.score, c.threshold)].tone}>
+                      {BAND_LABEL[bandFor(k.score, c.threshold)].label}
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-slate-300">Compare the faces first - score hidden</div>
+                )}
+                {open && bandFor(k.score, c.threshold) === "low" && (
+                  <label className="flex items-start gap-1 text-amber-200">
+                    <input
+                      type="checkbox"
+                      checked={!!acked[k.face_id]}
+                      onChange={(e) => setAcked({ ...acked, [k.face_id]: e.target.checked })}
+                    />
+                    <span>Uncertain match: I compared the faces myself</span>
+                  </label>
+                )}
                 <div>bbox {k.bbox.join(",")}</div>
                 {open && (
                   <div className="flex flex-wrap gap-1">
@@ -148,7 +170,7 @@ function CaseDetail({ id, onChange, take }: Take & { id: string; onChange: () =>
                         className="btn-ghost !px-2 !py-1"
                         onClick={() => {
                           const r = take();
-                          if (r) run(() => decideCandidate(c.id, k.face_id, d, r));
+                          if (r) run(() => decideCandidate(c.id, k.face_id, d, r, !!acked[k.face_id]));
                         }}
                       >
                         {d}
