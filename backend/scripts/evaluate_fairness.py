@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.config import get_settings  # noqa: E402
-from app.services import fairness  # noqa: E402
+from app.services import carbon, fairness  # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -32,8 +32,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", type=Path, default=fairness.ROOT / "governance" / "evidence" / "fairness-results.json")
     a = ap.parse_args(argv)
 
-    manifest = fairness.synthetic_manifest() if a.synthetic_demo else fairness.load_manifest(a.manifest)
-    report = fairness.evaluate(manifest, a.threshold, a.model)
+    with carbon.track_emissions("fairness-evaluation", fairness.ROOT / "governance" / "evidence"):
+        manifest = fairness.synthetic_manifest() if a.synthetic_demo else fairness.load_manifest(a.manifest)
+        report = fairness.evaluate(manifest, a.threshold, a.model)
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(report, indent=1), encoding="utf-8")
     print(f"outcome={report['outcome']} breaches={len(report['breaches'])} -> {a.out}")
