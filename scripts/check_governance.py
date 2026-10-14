@@ -82,6 +82,15 @@ REQUIRED_RECORDS: dict[str, list[str]] = {
     "privacy-attack-assessment.yaml": ["owner", "membership_inference", "model_inversion"],
     "system-overview.yaml": ["owner", "purpose", "intended_users", "scope", "assumptions", "limitations"],
     "audit-log-integrity.yaml": ["owner", "append_only", "tamper_detection"],
+    "accessibility-statement.yaml": ["owner", "language_accessibility", "disability_accessibility", "device_accessibility", "usability_assumptions", "support_channel"],
+    "human-factors.yaml": ["owner", "over_trust", "automation_bias", "workflow_misuse"],
+    "vulnerable-users.yaml": ["owner", "groups", "protections"],
+    "human-alternative.yaml": ["owner", "policy", "mandatory_human_decisions", "human_alternative_routes"],
+    "consent-design.yaml": ["owner", "rules", "enforcement"],
+    "societal-benefit.yaml": ["owner", "benefit_type", "beneficiaries", "benefit_criteria"],
+    "environmental-impact.yaml": ["owner", "carbon_tracking", "compute_budget", "footprint_by_design"],
+    "public-disclosure.yaml": ["owner", "harm_reporting", "public_disclosure"],
+    "access-barriers.yaml": ["owner", "cost", "language", "literacy", "infrastructure"],
 }
 
 # FAIR-03: the fairness result must hold numeric metrics and a valid outcome.
