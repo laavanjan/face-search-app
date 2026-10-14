@@ -12,6 +12,13 @@ schedule:
   - {data: "Appeal contact details (encrypted)", store: governance DB, retention_days: 30, setting: APPEAL_CONTACT_RETENTION_DAYS, note: "after resolution"}
   - {data: "Audit log (pseudonymous)", store: governance DB, retention_days: 365, setting: AUDIT_LOG_RETENTION_DAYS}
   - {data: "Application logs", store: log platform, retention_days: 30, note: "personal data redacted at source"}
+evidence_access:            # who may read retained data (enforced by backend/app/security.py)
+  photos_and_faces: "photos:read - viewer, operator, reviewer, admin"
+  review_cases_and_query_photos: "review:decide - reviewer"
+  appeals_and_decrypted_contacts: "appeals:manage - reviewer, admin"
+  audit_log: "audit:read - admin; append-only, hash-chained"
+  fairness_robustness_evidence: "repository readers (governance/evidence/), aggregate numbers only"
+  backups: "System Owner only"
 deletion_mechanisms:
   scheduled: "retention.purge_expired() at start-up and every RETENTION_SWEEP_INTERVAL_MINUTES (60); on Lambda schedule python -m app.jobs.retention"
   on_request: ["DELETE /photos/{photo_id}?reason= (photos:delete)", "Appeal deletion_request -> resolve action=delete_photo"]
