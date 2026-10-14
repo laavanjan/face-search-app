@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { fmtDate, submitAppeal, type Appeal, type AppealCategory } from "@/lib/api";
 
 const CATEGORIES: { value: AppealCategory; label: string }[] = [
@@ -21,6 +21,7 @@ type Props = {
 };
 
 export default function AppealForm({ photoId, faceId, caseId, defaultCategory, compact }: Props) {
+  const uid = useId();
   const [category, setCategory] = useState<AppealCategory>(defaultCategory ?? "incorrect_match");
   const [reason, setReason] = useState("");
   const [contact, setContact] = useState("");
@@ -68,41 +69,56 @@ export default function AppealForm({ photoId, faceId, caseId, defaultCategory, c
 
   return (
     <form onSubmit={submit} className="space-y-3 text-sm">
-      <select
-        className="w-full rounded-xl bg-black/30 border border-white/10 p-2"
-        value={category}
-        onChange={(e) => setCategory(e.target.value as AppealCategory)}
-      >
-        {CATEGORIES.map((c) => (
-          <option key={c.value} value={c.value}>{c.label}</option>
-        ))}
-      </select>
+      <label htmlFor={`${uid}-cat`} className="block">
+        <span className="block mb-1 text-slate-200">What is this about?</span>
+        <select
+          id={`${uid}-cat`}
+          className="w-full rounded-xl bg-black/30 border border-white/20 p-2"
+          value={category}
+          onChange={(e) => setCategory(e.target.value as AppealCategory)}
+        >
+          {CATEGORIES.map((c) => (
+            <option key={c.value} value={c.value}>{c.label}</option>
+          ))}
+        </select>
+      </label>
       {!compact && (
-        <input
-          className="w-full rounded-xl bg-black/30 border border-white/10 p-2"
-          placeholder="Photo reference (optional, e.g. 3f2a…e1.jpg)"
-          value={pid}
-          onChange={(e) => setPid(e.target.value.trim())}
-        />
+        <label htmlFor={`${uid}-pid`} className="block">
+          <span className="block mb-1 text-slate-200">Photo reference (optional)</span>
+          <input
+            id={`${uid}-pid`}
+            className="w-full rounded-xl bg-black/30 border border-white/20 p-2"
+            placeholder="e.g. 3f2a…e1.jpg"
+            value={pid}
+            onChange={(e) => setPid(e.target.value.trim())}
+          />
+        </label>
       )}
-      <textarea
-        required
-        minLength={10}
-        maxLength={2000}
-        rows={compact ? 2 : 4}
-        className="w-full rounded-xl bg-black/30 border border-white/10 p-2"
-        placeholder="What is wrong and what outcome do you want?"
-        value={reason}
-        onChange={(e) => setReason(e.target.value)}
-      />
-      <input
-        className="w-full rounded-xl bg-black/30 border border-white/10 p-2"
-        placeholder="Email or phone for our reply (optional, stored encrypted)"
-        maxLength={200}
-        value={contact}
-        onChange={(e) => setContact(e.target.value)}
-      />
-      {err && <div className="text-red-300">{err}</div>}
+      <label htmlFor={`${uid}-reason`} className="block">
+        <span className="block mb-1 text-slate-200">What is wrong and what outcome do you want?</span>
+        <textarea
+          id={`${uid}-reason`}
+          required
+          minLength={10}
+          maxLength={2000}
+          rows={compact ? 2 : 4}
+          className="w-full rounded-xl bg-black/30 border border-white/20 p-2"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
+      </label>
+      <label htmlFor={`${uid}-contact`} className="block">
+        <span className="block mb-1 text-slate-200">Email or phone for our reply (optional, stored encrypted)</span>
+        <input
+          id={`${uid}-contact`}
+          className="w-full rounded-xl bg-black/30 border border-white/20 p-2"
+          maxLength={200}
+          autoComplete="email"
+          value={contact}
+          onChange={(e) => setContact(e.target.value)}
+        />
+      </label>
+      {err && <div role="alert" className="text-red-300">{err}</div>}
       <button className="btn" disabled={busy || reason.length < 10}>
         {busy ? "Submitting…" : "Submit appeal"}
       </button>
