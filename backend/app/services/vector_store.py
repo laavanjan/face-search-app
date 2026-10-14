@@ -10,6 +10,8 @@ Payload allowlist (data minimisation - every field has a consumer):
   indexed_at     retention TTL (governance/data-retention-policy.yaml)
   uploaded_by    separation of duties (uploader cannot approve own upload)
   model          ties the embedding to the model that produced it (re-index on change)
+  minor          photo shows someone under 18 (guardian consent asserted): forced
+                 human review + shorter retention (governance/vulnerable-users.yaml)
 No filenames, EXIF or free text are stored.
 """
 from __future__ import annotations
@@ -83,6 +85,7 @@ def upsert(
     review_status: str,
     indexed_at: float,
     uploaded_by: str,
+    minor: bool = False,
 ) -> None:
     s = get_settings()
     client = _get_client()
@@ -98,6 +101,7 @@ def upsert(
             "indexed_at": indexed_at,
             "uploaded_by": uploaded_by,
             "model": s.face_model_name,
+            "minor": minor,
         },
     )
     retry(
@@ -226,8 +230,11 @@ def delete_by_photo_id(photo_id: str) -> int:
     return n
 
 
-def expired_photo_ids(cutoff_ts: float) -> set[str]:
-    flt = qm.Filter(must=[qm.FieldCondition(key="indexed_at", range=qm.Range(lt=cutoff_ts))])
+def expired_photo_ids(cutoff_ts: float, minors_only: bool = False) -> set[str]:
+    must = [qm.FieldCondition(key="indexed_at", range=qm.Range(lt=cutoff_ts))]
+    if minors_only:
+        must.append(qm.FieldCondition(key="minor", match=qm.MatchValue(value=True)))
+    flt = qm.Filter(must=must)
     return {(p.payload or {}).get("photo_id") for p in _scroll(flt)} - {None}
 
 
