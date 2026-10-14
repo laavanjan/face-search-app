@@ -74,6 +74,13 @@ class Settings(BaseSettings):
     appeal_retention_days: int = 365
     audit_log_retention_days: int = 365
     appeal_contact_retention_days: int = 30  # contact wiped this long after resolution
+    # Photos flagged as showing a minor are kept for less time (governance/vulnerable-users.yaml).
+    minor_photo_retention_days: int = 30
+
+    # --- Compute budget (governance/environmental-impact.yaml) ---
+    # Daily cap on face-analysis CPU seconds; new uploads/searches get 503 once
+    # spent. 0 disables. Bounds energy use and runaway batch jobs.
+    inference_cpu_seconds_per_day: float = 3600.0
     retention_sweep_interval_minutes: int = 60
 
     # --- Recourse SLA (docs/oversight/appeals-and-sla.md) ---
@@ -137,6 +144,7 @@ class Settings(BaseSettings):
             "aws_region": self.aws_region,
             "data_processing_legal_basis": self.data_processing_legal_basis,
             "photo_retention_days": self.photo_retention_days,
+            "minor_photo_retention_days": self.minor_photo_retention_days,
         }
 
     def governance_fingerprint(self) -> str:
