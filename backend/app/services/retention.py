@@ -58,9 +58,16 @@ def purge_expired(now: float | None = None) -> dict:
             "DELETE FROM appeals WHERE status = 'resolved' AND resolved_at < ?",
             (now - s.appeal_retention_days * DAY,),
         ).rowcount
-        audit_rows = c.execute(
-            "DELETE FROM audit_log WHERE ts < ?", (now - s.audit_log_retention_days * DAY,)
-        ).rowcount
+        # Oldest-first, one row at a time: the append-only trigger only allows
+        # expiring the head, which keeps the remaining hash chain contiguous.
+        audit_rows = 0
+        cutoff = now - s.audit_log_retention_days * DAY
+        while True:
+            head = c.execute("SELECT id, ts FROM audit_log ORDER BY id LIMIT 1").fetchone()
+            if not head or head["ts"] >= cutoff:
+                break
+            c.execute("DELETE FROM audit_log WHERE id = ?", (head["id"],))
+            audit_rows += 1
     result = {
         "photos_deleted": len(photos),
         "review_cases_deleted": cases,
