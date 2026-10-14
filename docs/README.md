@@ -107,6 +107,15 @@ Structured versions of the key policies, validated on every PR and weekly by
 | `backend/app/version_manifest.json` + `CHANGELOG.md` + `GET /version` | DOC-05 |
 | `governance/data-retention-policy.yaml` (`evidence_access`) | DOC-06 |
 | `governance/audit-log-integrity.yaml` + `GET /admin/audit/verify` | DOC-07 |
+| `governance/accessibility-statement.yaml` + `frontend/app/accessibility/page.tsx` + `frontend/locales/` | ACC-01, ACC-08 |
+| `governance/human-factors.yaml` | ACC-03 |
+| `governance/vulnerable-users.yaml` | ACC-05 |
+| `governance/human-alternative.yaml` + `POST /support` | ACC-06 |
+| `governance/consent-design.yaml` | ACC-07 |
+| `governance/societal-benefit.yaml` | SOC-01 |
+| `governance/environmental-impact.yaml` + `backend/app/services/carbon.py` | SOC-03 |
+| `governance/public-disclosure.yaml` + `GET /transparency-report` | SOC-07 |
+| `governance/access-barriers.yaml` | SOC-08 |
 
 ## Change records
 
