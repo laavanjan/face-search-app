@@ -1,0 +1,31 @@
+# Threat model (SEC-01), STRIDE per trust boundary. Owner: System Owner; Privacy Owner for data threats.
+document: threat-model
+owner: "@laavanjan"
+assessed: 2026-10-14
+next_review: 2027-01-14
+review_triggers: [new external provider, auth/role change, new public endpoint, model change, scale beyond governance/risk-assessment.yaml]
+assets: [face photos, 512-d embeddings (biometric), search reference photos, API keys, DATA_ENCRYPTION_KEY, audit log, appeal contacts]
+trust_boundaries:
+  - "Browser -> Next.js -> FastAPI (/api proxy)"
+  - "FastAPI -> Qdrant (vectors)"
+  - "FastAPI -> local disk / S3 (photos)"
+  - "FastAPI -> AWS Rekognition (optional)"
+  - "FastAPI -> SQLite governance DB"
+  - "Public internet -> /appeals, /abuse-reports"
+gaps:
+  - {gap: "No encryption at rest for local disk/Qdrant", owner: System Owner, due: before production}
+  - {gap: "Rate limits per process only", owner: System Owner, due: before multi-worker deploy}
+  - {gap: "API keys not yet SSO/OIDC", owner: System Owner, due: 2027-04-14}
+  - {gap: "No backup/restore drill", owner: System Owner, due: 2027-01-14}
+threats:
+  - {id: T1, stride: Spoofing, threat: "Stolen or guessed API key", mitigation: "per-person keys, sha256 storage in production, AuthGateMiddleware, 20-failure lockout", residual: medium}
+  - {id: T2, stride: Tampering, threat: "Edit audit log to hide misuse", mitigation: "append-only triggers + SHA-256 hash chain, /admin/audit/verify", residual: low}
+  - {id: T3, stride: Repudiation, threat: "Reviewer denies a decision", mitigation: "pseudonymous actor + reason + trace id on every decision", residual: low}
+  - {id: T4, stride: Information disclosure, threat: "Embeddings or photos leaked via API", mitigation: "RBAC, embeddings never returned (test_api_never_returns_embeddings), photos via authenticated route only", residual: low}
+  - {id: T5, stride: Information disclosure, threat: "Qdrant/S3 reachable from network", mitigation: "private network, QDRANT_API_KEY, S3 block-public-access (deployment checklist)", residual: medium}
+  - {id: T6, stride: Information disclosure, threat: "Membership inference: is person X in the library?", mitigation: "search needs operator role + consent, results only after human review, audit, rate limit", residual: medium}
+  - {id: T7, stride: Information disclosure, threat: "Model inversion: reconstruct faces from leaked embeddings", mitigation: "see governance/privacy-attack-assessment.yaml", residual: medium}
+  - {id: T8, stride: Denial of service, threat: "Request floods, decompression bombs, model stalls", mitigation: "global rate limit, 40 MP cap, 15 MB cap, inference deadline", residual: low}
+  - {id: T9, stride: Elevation of privilege, threat: "Multi-role key, self-review", mitigation: "ALLOWED_ROLE_BUNDLES, separation of duties", residual: medium (RT-13)}
+  - {id: T10, stride: Tampering, threat: "Malicious dependency / leaked secret in repo", mitigation: "lockfile, Dependabot, pip-audit, gitleaks, SBOM (security.yml)", residual: low}
+  - {id: T11, stride: Misuse, threat: "Surveillance or non-consensual search", mitigation: "consent gate, prohibited-use policy, abuse reports, reviewer stop", residual: medium}
