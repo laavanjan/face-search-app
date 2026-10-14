@@ -1,0 +1,33 @@
+# Pretrained model assessment: InsightFace buffalo_l (SEC-06).
+document: pretrained-model-assessment
+owner: "@laavanjan"
+assessed: 2026-10-14
+next_review: 2027-01-14
+model: {name: buffalo_l, source: "InsightFace model zoo", package: "insightface==0.7.3", pinned_in: backend/app/version_manifest.json}
+licence:
+  code: "MIT (insightface package)"
+  weights: "Non-commercial research use only (InsightFace README); commercial use needs a licence from the InsightFace authors"
+  training_data: "WIDER FACE, WebFace600K/WebFace260M - research-use terms of their authors"
+  conclusion: "Permitted for this non-commercial deployment only (risk R-06)"
+  detail: governance/model-training-data.yaml
+known_limitations:
+  - "Higher error for blur, occlusion, low light, extreme pose, faces < 40 px"
+  - "Look-alikes and relatives can exceed the 0.35 similarity floor"
+  - "Subgroup accuracy on our population is unmeasured (risk R-03)"
+  - "Training data scraped from the web without subjects' consent to this use"
+  - "Full list: governance/system-limitations.yaml"
+safety_testing_record:
+  - {test: "Input robustness / OOD formats", result: "pass - all shifts normalised, malformed inputs rejected", evidence: "tests/test_robustness.py, governance/evidence/robustness-results.json", date: 2026-10-14}
+  - {test: "Adversarial / abuse inputs", result: "12 scenarios, 10 fixed + 2 passed", evidence: governance/red-team-report.yaml, date: 2026-10-14}
+  - {test: "Fairness (per-group FMR/FNMR)", result: "iterate - synthetic data only", evidence: governance/evidence/fairness-results.json, date: 2026-10-14}
+  - {test: "Model robustness under distribution shift", result: "not yet run - needs consented face photos", evidence: governance/robustness-evaluation.yaml}   # PLACEHOLDER result
+  - {test: "Privacy attacks (membership inference, inversion)", result: "assessed, mitigated", evidence: governance/privacy-attack-assessment.yaml, date: 2026-10-14}
+fitness_for_purpose:
+  purpose: "Propose candidate matches for human verification in a private, consented photo library"
+  fit_because:
+    - "ArcFace embeddings are a strong, widely benchmarked baseline for face verification"
+    - "Runs locally on CPU - no biometric data leaves the host by default"
+    - "Output is only a candidate list; every decision is human-verified"
+  not_fit_for: ["autonomous identification", "surveillance", "law enforcement", "any high-impact decision", "commercial use without a licence"]
+  conditions: ["human review stays mandatory", "similarity floor >= 0.35", "fairness 'accept' on consented data before threshold/model changes"]
+  verdict: "Fit for the stated limited purpose under these conditions; not fit for autonomous use"
