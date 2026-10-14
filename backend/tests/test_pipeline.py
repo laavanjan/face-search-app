@@ -67,7 +67,7 @@ def test_metadata_stripped_and_filename_not_stored():
     assert "filename" not in payload
     assert set(payload) <= {
         "face_id", "photo_id", "bbox", "det_score", "quality",
-        "review_status", "indexed_at", "uploaded_by", "model",
+        "review_status", "indexed_at", "uploaded_by", "model", "minor",
     }
 
 
