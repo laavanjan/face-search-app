@@ -69,5 +69,5 @@ sqlite:
     change_id: "change record id | traceability"
     approved_by: pseudonym
     approved_at: time
-qdrant_payload: [photo_id, bbox, det_score, quality, review_status, indexed_at, uploaded_by, model]
+qdrant_payload: [photo_id, bbox, det_score, quality, review_status, indexed_at, uploaded_by, model, minor]
 not_collected: [filenames, EXIF/GPS, names, emails of staff, inferred demographics]
