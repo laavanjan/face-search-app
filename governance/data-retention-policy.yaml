@@ -5,6 +5,7 @@ owner: Privacy & Incident Owner (@laavanjan, interim)
 next_review: 2027-01-14
 schedule:
   - {data: "Uploaded photos (sanitized)", store: "LOCAL_PHOTO_DIR or private S3 photos/", retention_days: 90, setting: PHOTO_RETENTION_DAYS, purpose: "Show matches to authorised users"}
+  - {data: "Photos/vectors showing a minor", store: "as above", retention_days: 30, setting: MINOR_PHOTO_RETENTION_DAYS}
   - {data: "Face embeddings + payload", store: Qdrant, retention_days: 90, setting: PHOTO_RETENTION_DAYS, purpose: "Similarity search", note: "Deleted together with the photo"}
   - {data: "Search reference photos", store: governance DB, retention: "until the review case closes", purpose: "Reviewer comparison"}
   - {data: "Review cases + candidates", store: governance DB, retention_days: 30, setting: REVIEW_CASE_RETENTION_DAYS}
