@@ -35,6 +35,13 @@ def _search(client, seed: int, threshold=0.35, headers=OPERATOR):
         )
 
 
+def _candidates(client, seed: int) -> int:
+    """Candidate count is visible to reviewers only (requesters never see it)."""
+    r = _search(client, seed).json()
+    assert r["candidate_count"] is None and r["status"] == "pending_review"
+    return len(client.get(f"/review/cases/{r['case_id']}", headers=REVIEWER).json()["candidates"])
+
+
 def _approved_photo(client, seed: int) -> str:
     pid = _upload(client, seed).json()["photo_id"]
     r = client.post(f"/review/photos/{pid}", json={"decision": "approve", "reason": "consent on file"}, headers=REVIEWER)
@@ -100,13 +107,13 @@ def test_upload_is_pending_until_reviewer_approves(client):
     r = _upload(client, 202)
     assert r.json()["review_status"] == "pending"
     pid = r.json()["photo_id"]
-    assert _search(client, 202).json()["candidate_count"] == 0
+    assert _candidates(client, 202) == 0
 
     pending = client.get("/review/photos", headers=REVIEWER).json()["items"]
     assert pid in {p["photo_id"] for p in pending}
     assert client.post(f"/review/photos/{pid}", json={"decision": "approve", "reason": "ok ok"}, headers=OPERATOR).status_code == 403
     client.post(f"/review/photos/{pid}", json={"decision": "approve", "reason": "consent verified"}, headers=REVIEWER)
-    assert _search(client, 202).json()["candidate_count"] == 1
+    assert _candidates(client, 202) == 1
 
 
 def test_reject_at_index_review_deletes_photo(client):
@@ -171,9 +178,9 @@ def test_stop_prevents_release(client):
 def test_human_takeover_manual_match(client):
     pid = _approved_photo(client, 303)
     case = _search(client, 304).json()  # different person -> no model candidates
-    assert case["status"] == "no_match"
+    assert case["status"] == "pending_review"  # still goes to a human
     case_id = case["case_id"]
-    client.post(f"/review/cases/{case_id}/reopen", json={"reason": "operator escalated"}, headers=REVIEWER)
+    assert client.get(f"/review/cases/{case_id}", headers=REVIEWER).json()["candidates"] == []
     client.post(f"/review/cases/{case_id}/manual-match", json={"photo_id": pid, "reason": "identified manually"}, headers=REVIEWER)
     client.post(f"/review/cases/{case_id}/close", json={"outcome": "completed", "reason": "done"}, headers=REVIEWER)
     m = client.get(f"/search/cases/{case_id}", headers=OPERATOR).json()["matches"]
@@ -219,7 +226,7 @@ def test_appeal_restricts_photo_until_resolved(client):
     appeal = r.json()
     assert appeal["photo_restricted"] is True
     assert appeal["resolve_by"] > appeal["created_at"]
-    assert _search(client, 501).json()["candidate_count"] == 0  # restricted
+    assert _candidates(client, 501) == 0  # restricted
 
     # Status lookup is subject-scoped: needs the token issued at submission.
     assert client.get(f"/appeals/{appeal['id']}").status_code == 404
@@ -231,7 +238,7 @@ def test_appeal_restricts_photo_until_resolved(client):
     assert any(a["id"] == appeal["id"] and a["contact"] == "me@example.org" for a in queue)
 
     client.post(f"/appeals/{appeal['id']}/resolve", json={"outcome": "rejected", "resolution": "Verified match", "action": "restore_photo"}, headers=REVIEWER)
-    assert _search(client, 501).json()["candidate_count"] == 1
+    assert _candidates(client, 501) == 1
 
 
 def test_deletion_appeal_needs_delete_permission(client):
@@ -319,7 +326,7 @@ def test_retry_only_transient(monkeypatch):
 
 PUBLIC_ROUTES = {
     ("GET", "/"), ("GET", "/health"), ("GET", "/policy"),
-    ("POST", "/appeals"), ("GET", "/appeals/{appeal_id}"),
+    ("POST", "/appeals"), ("GET", "/appeals/{appeal_id}"), ("POST", "/abuse-reports"),
 }
 
 
