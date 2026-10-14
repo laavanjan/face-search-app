@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import HTTPException, Path, UploadFile
 
+from app.services.carbon import ComputeBudgetExceeded
 from app.services.resilience import DeadlineExceeded, is_transient
 
 ALLOWED = {"image/jpeg", "image/png", "image/webp"}
@@ -27,6 +28,8 @@ async def read_image(file: UploadFile) -> bytes:
 def pipeline_error(e: Exception, no_face_msg: str) -> HTTPException:
     if isinstance(e, DeadlineExceeded):
         return HTTPException(504, "Face analysis timed out; please retry or contact the service owner.")
+    if isinstance(e, ComputeBudgetExceeded):
+        return HTTPException(503, "Daily compute budget reached; please try again tomorrow.")
     if is_transient(e):
         # Fallback after bounded retries are exhausted: fail closed, nothing is
         # stored or disclosed, caller is told to retry (SAFE-04).
