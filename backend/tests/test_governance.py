@@ -30,7 +30,7 @@ def _search(client, seed: int, threshold=0.35, headers=OPERATOR):
         return client.post(
             "/search",
             files={"file": ("q.png", synthetic_png(), "image/png")},
-            data={"threshold": str(threshold), "consent": "true"},
+            data={"threshold": str(threshold), "consent": "true", "purpose": "self"},
             headers=headers,
         )
 
@@ -327,6 +327,7 @@ def test_retry_only_transient(monkeypatch):
 PUBLIC_ROUTES = {
     ("GET", "/"), ("GET", "/health"), ("GET", "/policy"),
     ("POST", "/appeals"), ("GET", "/appeals/{appeal_id}"), ("POST", "/abuse-reports"),
+    ("POST", "/support"), ("GET", "/transparency-report"),
 }
 
 
