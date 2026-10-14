@@ -75,7 +75,7 @@ jobs:
         run: |
           pip install pip-tools==7.4.1
           pip-compile --quiet --generate-hashes --strip-extras --output-file /tmp/requirements.lock requirements.txt
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: requirements.lock
           path: /tmp/requirements.lock
