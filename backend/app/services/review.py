@@ -77,7 +77,10 @@ def create_case(
 ) -> dict:
     case_id = uuid.uuid4().hex
     now = time.time()
-    status = PENDING_REVIEW if hits else NO_MATCH
+    # Every search goes to a human, even with zero candidates. Closing empty
+    # searches automatically would tell the requester "this person is not in
+    # the library" before review - a membership-inference leak (SEC-07).
+    status = PENDING_REVIEW
     with db.tx() as c:
         c.execute(
             "INSERT INTO review_cases (id, created_at, requested_by, status, threshold, query_faces, "
@@ -89,11 +92,11 @@ def create_case(
                 status,
                 threshold,
                 query_faces,
-                query_image if hits else None,  # nothing to review -> keep nothing
+                query_image,
                 "image/png" if ext == "png" else "image/jpeg",
-                None if hits else "system",
-                None if hits else now,
-                None if hits else "no_candidates",
+                None,
+                None,
+                None,
             ),
         )
         for h in hits:
