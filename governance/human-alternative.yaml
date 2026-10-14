@@ -1,0 +1,19 @@
+# Human alternative route (ACC-06).
+document: human-alternative
+owner: "@laavanjan"
+next_review: 2027-01-14
+policy: >
+  A human decision is MANDATORY for every consequential decision: making a photo searchable
+  and releasing any match. The AI only proposes; it never decides alone. Any person may also
+  ask for a human to do the whole task instead of the AI.
+mandatory_human_decisions:
+  - {decision: "photo becomes searchable", route: "POST /review/photos/{id} by a reviewer", code: services/review.py decide_photo}
+  - {decision: "a match is released", route: "reviewer approves candidate + completes case", code: services/review.py released_matches}
+  - {decision: "deletion / appeal outcome", route: "POST /appeals/{id}/resolve", code: services/appeals.py}
+human_alternative_routes:
+  - {route: "POST /support topic=human_assistance", who: "anyone, no account", what: "a person searches the photos or completes a form for you", code: backend/app/routes/support.py}
+  - {route: "POST /review/cases/{id}/manual-match", who: reviewer, what: "human takeover: add a match the model missed", code: services/review.py add_manual_match}
+  - {route: "/appeal", who: anyone, what: "challenge any AI-assisted outcome", code: backend/app/routes/appeals.py}
+ui: "'Prefer a person to do this instead? Ask for help' on the search page; /accessibility#support"
+sla: "Same as appeals: acknowledge within 2 days, resolve within 30"
+tests: [test_support_channel_and_human_alternative, test_search_results_released_only_after_review, test_human_takeover_manual_match]
