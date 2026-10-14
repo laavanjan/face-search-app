@@ -34,6 +34,11 @@ def _count(bucket: str, key: str, now: float) -> deque:
     return q
 
 
+def exceeded(bucket: str, key: str, limit: int) -> bool:
+    with _lock:
+        return len(_count(bucket, key, time.time())) >= limit
+
+
 def check(bucket: str, key: str, limit: int) -> None:
     with _lock:
         if len(_count(bucket, key, time.time())) >= limit:
@@ -50,6 +55,19 @@ def limit_appeal_submissions(request: Request) -> None:
     key = client_key(request)
     check("appeal", key, APPEAL_SUBMIT_LIMIT)
     hit("appeal", key)
+
+
+def allow(bucket: str, key: str, limit: int, window: int) -> bool:
+    """Sliding window with its own length; records the hit when allowed."""
+    with _lock:
+        now = time.time()
+        q = _hits[(bucket, key)]
+        while q and now - q[0] > window:
+            q.popleft()
+        if len(q) >= limit:
+            return False
+        q.append(now)
+        return True
 
 
 def reset_for_tests() -> None:
