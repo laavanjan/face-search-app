@@ -14,6 +14,7 @@ import base64
 import hashlib
 import hmac
 import logging
+import secrets
 
 from cryptography.fernet import Fernet, InvalidToken
 
@@ -21,7 +22,10 @@ from app.config import get_settings
 
 log = logging.getLogger(__name__)
 
-_DEV_KEY = "dev-only-insecure-key"
+# No key is hard-coded. Without DATA_ENCRYPTION_KEY, development runs use a
+# random per-process key (pseudonyms and encrypted contacts do not survive a
+# restart); production refuses to start.
+_EPHEMERAL_KEY = secrets.token_urlsafe(32)
 
 
 def check_key() -> None:
@@ -30,11 +34,11 @@ def check_key() -> None:
         return
     if s.environment == "production":
         raise RuntimeError("DATA_ENCRYPTION_KEY must be set when ENVIRONMENT=production")
-    log.warning("DATA_ENCRYPTION_KEY is empty: using an insecure development key.")
+    log.warning("DATA_ENCRYPTION_KEY is empty: using a random per-process development key.")
 
 
 def _subkey(label: str) -> bytes:
-    master = (get_settings().data_encryption_key or _DEV_KEY).encode()
+    master = (get_settings().data_encryption_key or _EPHEMERAL_KEY).encode()
     return hmac.new(master, label.encode(), hashlib.sha256).digest()
 
 
