@@ -33,6 +33,8 @@ PUBLIC_ROUTES: tuple[tuple[str, re.Pattern], ...] = tuple(
         ("POST", r"^/appeals$"),                      # recourse for people without accounts
         ("GET", r"^/appeals/[0-9a-f]{32}$"),          # needs X-Appeal-Token (checked in route)
         ("POST", r"^/abuse-reports$"),                # misuse reporting, rate-limited
+        ("POST", r"^/support$"),                      # accessible support / human alternative
+        ("GET", r"^/transparency-report$"),           # public aggregate disclosure
     ]
 )
 
