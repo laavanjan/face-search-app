@@ -1,0 +1,21 @@
+# Harm reporting + public disclosure (SOC-07).
+document: public-disclosure
+owner: "@laavanjan"
+next_review: 2027-01-14
+harm_reporting:
+  endpoints:
+    - "POST /abuse-reports (public, no account, rate-limited): kinds non_consensual_search, surveillance, scraped_images, harassment, account_compromise, other - backend/app/routes/appeals.py"
+    - "POST /appeals category abuse_report / incorrect_match (the 'Report misuse' option at /appeal)"
+    - "Security issues: SECURITY.md (private vulnerability reporting)"
+  effect: "A referenced photo is excluded from search immediately; report enters the reviewers' queue with the appeal SLA"
+public_disclosure:
+  transparency_report:
+    endpoint: "GET /transparency-report (public) - backend/app/routes/support.py; page /transparency"
+    contents: [searches requested, matches confirmed/rejected by people, searches stopped, photos refused/deleted, appeals and reports by type with outcomes, median days to resolve, safeguards in force]
+    period: "rolling 90 days"
+    privacy: "counts 1-4 shown as '<5'; aggregates only"
+  published_documents: ["GOVERNANCE.md", "SECURITY.md", "CHANGELOG.md", "/privacy", "/accessibility", "governance/*.yaml"]
+  incidents: "P0 incidents involving personal data are disclosed to affected people and summarised in CHANGELOG.md / a GitHub advisory (governance/incident-response.yaml)"
+  model_and_limits: "Model card, limitations and fairness status are public (governance/model-card.yaml, system-limitations.yaml, evidence/fairness-results.json)"
+cadence: "Transparency report always live; governance documents reviewed quarterly"
+tests: [test_transparency_report_is_public_and_suppresses_small_counts, test_abuse_report_endpoint]
