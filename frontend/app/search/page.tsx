@@ -8,6 +8,7 @@ import ConsentCheck from "@/components/ConsentCheck";
 import Dropzone from "@/components/Dropzone";
 import { getPolicy, getSearchCase, searchPhoto, type SearchCase } from "@/lib/api";
 import { useSession } from "@/lib/session";
+import { useT } from "@/lib/i18n";
 import { BAND_LABEL, LIMITATIONS } from "@/lib/limitations";
 
 const STATUS_TEXT: Record<string, string> = {
@@ -20,6 +21,9 @@ const STATUS_TEXT: Record<string, string> = {
 
 export default function SearchPage() {
   const { ready, can, me } = useSession();
+  const { t } = useT();
+  // No purpose is pre-selected; only the two permitted purposes exist (ACC-03, ACC-07).
+  const [purpose, setPurpose] = useState<"" | "self" | "consenting_person">("");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<SearchCase | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -42,7 +46,8 @@ export default function SearchPage() {
     setErr(null);
     setRes(null);
     try {
-      const r = await searchPhoto(f, { limit: 40, threshold, consent });
+      if (!purpose) return;
+      const r = await searchPhoto(f, { limit: 40, threshold, consent, purpose });
       setRes(r);
     } catch (e: any) {
       setErr(e.message ?? "search failed");
@@ -62,24 +67,37 @@ export default function SearchPage() {
 
   return (
     <div className="space-y-6">
-      <section className="glass rounded-2xl p-8">
-        <h1 className="text-3xl font-semibold tracking-tight mb-2">
-          Find photos of this person
-        </h1>
-        <p className="text-slate-400 text-sm mb-6 max-w-2xl">
-          Drop a reference photo. We embed the largest face and run cosine
-          similarity against approved, indexed faces. The model only proposes
-          candidates: a human reviewer verifies each one before anything is
-          released to you. Scores are similarity estimates, not identification.
+      <section className="glass rounded-2xl p-6 sm:p-8">
+        <h1 className="text-3xl font-semibold tracking-tight mb-2">{t("search.title")}</h1>
+        <p className="text-slate-200 mb-3 max-w-2xl">{t("search.lead")}</p>
+        <details className="text-sm text-slate-300 mb-3 max-w-2xl">
+          <summary className="cursor-pointer underline">{t("search.tech")}</summary>
+          <p className="mt-1">{t("search.techBody")}</p>
+        </details>
+        <p className="text-sm mb-6">
+          <Link href="/accessibility#support" className="underline text-slate-200">{t("search.human")}</Link>
         </p>
         {ready && !can("photos:search") ? (
-          <div className="text-sm text-slate-400">
-            <Link href="/signin" className="underline">Sign in</Link> with an operator key to search.
+          <div className="text-slate-300">
+            <Link href="/signin" className="underline">{t("nav.signin")}</Link> · {t("search.signin")}
           </div>
         ) : (
           <>
+            <label className="block text-sm text-slate-200 mb-4 max-w-2xl">
+              <span className="block mb-1">{t("search.purpose")}</span>
+              <select
+                required
+                className="w-full rounded-xl bg-black/30 border border-white/20 p-2"
+                value={purpose}
+                onChange={(e) => setPurpose(e.target.value as typeof purpose)}
+              >
+                <option value="" disabled>{t("search.purpose.choose")}</option>
+                <option value="self">{t("search.purpose.self")}</option>
+                <option value="consenting_person">{t("search.purpose.consenting")}</option>
+              </select>
+            </label>
             <ConsentCheck purpose="search" checked={consent} onChange={setConsent} />
-            <Dropzone onFile={run} disabled={busy || !consent} label="Drop a reference photo" />
+            <Dropzone onFile={run} disabled={busy || !consent || !purpose} />
             <div className="flex items-center gap-3 mt-4 text-sm text-slate-300">
               <label>Threshold</label>
               <input
