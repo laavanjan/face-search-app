@@ -16,7 +16,7 @@ def _approved_completed_case(client, seed: int) -> str:
     with patch("app.services.face_engine.analyze", return_value=[synthetic_face(seed)]):
         pid = client.post("/upload", files={"file": ("p", synthetic_png(), "image/png")}, data={"consent": "true"}, headers=OPERATOR).json()["photo_id"]
         client.post(f"/review/photos/{pid}", json={"decision": "approve", "reason": "consent ok"}, headers=REVIEWER)
-        case = client.post("/search", files={"file": ("q", synthetic_png(), "image/png")}, data={"consent": "true"}, headers=OPERATOR).json()["case_id"]
+        case = client.post("/search", files={"file": ("q", synthetic_png(), "image/png")}, data={"consent": "true", "purpose": "self"}, headers=OPERATOR).json()["case_id"]
     face = client.get(f"/review/cases/{case}", headers=REVIEWER).json()["candidates"][0]["face_id"]
     client.post(f"/review/cases/{case}/candidates/{face}", json={"decision": "approve", "reason": "same person"}, headers=REVIEWER)
     client.post(f"/review/cases/{case}/close", json={"outcome": "completed", "reason": "verified"}, headers=REVIEWER)
