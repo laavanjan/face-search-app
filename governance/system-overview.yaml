@@ -1,0 +1,33 @@
+# System overview (DOC-01): purpose, intended users, scope, assumptions, limitations.
+# Human-readable version: GOVERNANCE.md. Model details: governance/model-card.yaml.
+document: system-overview
+owner: "@laavanjan"
+version: 0.2.1            # backend/app/version_manifest.json
+next_review: 2027-01-14
+purpose: >
+  Find the photos a given person appears in, within a private photo collection that the
+  operator is entitled to process and where the people shown have consented. The system
+  proposes candidate matches; a human reviewer verifies each before anything is released.
+intended_users:
+  - {role: operator, who: "Individual organising their own photos, or staff searching an organisation's consented collection", can: "upload, search"}
+  - {role: human reviewer, who: "Trained person distinct from the operator", can: "approve indexing, verify matches, handle appeals"}
+  - {role: service owner / admin, who: "Runs the deployment", can: "pause, approve config, delete, read audit"}
+  - {role: viewer, who: "Read-only library user", can: "browse gallery"}
+  - {role: data subject, who: "Anyone shown in a photo - usually not a user", can: "appeal or report abuse without an account"}
+scope:
+  in_scope: ["face detection and embedding", "1:N similarity search over approved faces", "human review of indexing and results", "appeals, deletion, retention"]
+  out_of_scope: ["surveillance / CCTV", "identifying strangers", "scraped images", "law enforcement", "high-impact decisions", "attribute inference", "commercial use of buffalo_l"]
+  deployment: "single host Docker (FastAPI, Next.js, Qdrant, SQLite); optional AWS Rekognition/S3"
+  scale_limits: "governance/risk-assessment.yaml approved_maximum (10 users, 20k photos, 200 searches/day)"
+assumptions:
+  - "Uploaders hold consent from everyone identifiable in each photo"
+  - "Ordinary consumer photos: faces >= 40 px, reasonable light and pose"
+  - "Reviewers are trained and are not the requester"
+  - "Similarity 0.35 is a candidate floor, not an identity threshold"
+  - "Deployment keeps Qdrant/S3 on a private network and sets DATA_ENCRYPTION_KEY"
+limitations:
+  - "Similarity is an estimate; false matches (look-alikes, relatives) and misses (blur, occlusion, pose, age gap) happen"
+  - "Accuracy across demographic groups is not yet measured on real data (fairness outcome: iterate)"
+  - "In a group reference photo the largest face is used"
+  - "Rate limits are per process; no SSO yet; local storage not encrypted at rest"
+  - "Full list: governance/system-limitations.yaml"
