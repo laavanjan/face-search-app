@@ -36,7 +36,7 @@ async def search(
         status=case["status"],
         query_faces=len(faces),
         threshold_applied=applied,
-        candidate_count=case["candidate_count"],
+        candidate_count=None,  # hidden from the requester: the count alone reveals membership
         matches=[],
     )
 
