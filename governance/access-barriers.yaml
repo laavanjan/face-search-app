@@ -1,0 +1,19 @@
+# Barriers to access (SOC-08).
+document: access-barriers
+owner: "@laavanjan"
+next_review: 2027-01-14
+cost:
+  considered: "Free to use; no paid tier. Appeals, abuse reports and help requests need no account and no payment"
+  mitigations: ["no-cost assisted route: POST /support topic=cost or human_assistance, reply by phone", "small uploads save mobile data (frontend/lib/image.ts)", "runs on modest CPU hardware - no GPU cost for operators"]
+language:
+  considered: "English-only UI excludes non-English speakers"
+  mitigations: ["UI in English and Spanish (frontend/locales); <html lang> set for screen readers", "support requests record the person's language; replies in that language where possible", "completeness test: tests/test_inclusion.py::test_every_language_has_every_string"]
+  next: "Add further languages based on support-request demand"
+literacy:
+  considered: "Technical terms (embedding, cosine similarity) are a barrier"
+  mitigations: ["plain-language copy first, technical details collapsed", "reply formats: easy read, large print, phone", "someone can submit on another person's behalf"]
+infrastructure:
+  considered: "Slow, metered or unreliable connections; no personal device"
+  mitigations: ["client-side image shrinking before upload", "server retries/timeouts fail safely - nothing half-stored", "works on phones; no app install", "phone-call reply option for people without internet; a trusted person can file for them"]
+  limitation: "No offline/SMS channel yet"
+review: "Quarterly, using support-request topics as the signal"
