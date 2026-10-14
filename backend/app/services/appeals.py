@@ -23,7 +23,11 @@ from app.security import Principal
 from app.services import audit, crypto, db, retention, storage, vector_store
 
 DAY = 86400
-CATEGORIES = {"incorrect_match", "indexing_objection", "deletion_request", "access_request", "abuse_report", "other"}
+CATEGORIES = {
+    "incorrect_match", "indexing_objection", "deletion_request", "access_request", "abuse_report",
+    "support_request",  # POST /support - accessibility help, human alternative (routes/support.py)
+    "other",
+}
 # abuse_report: misuse of the system (e.g. someone searching for a person
 # without consent). Filed via POST /abuse-reports; restricts the photo too.
 RESTRICTING = {"incorrect_match", "indexing_objection", "deletion_request", "abuse_report"}
