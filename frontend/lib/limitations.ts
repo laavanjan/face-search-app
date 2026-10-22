@@ -9,11 +9,12 @@ export const LIMITATIONS: string[] = [
   "In a group photo the largest face is used as the reference.",
 ];
 
+// `tone` is a badge class from app/globals.css.
 export const BAND_LABEL: Record<string, { label: string; tone: string }> = {
-  low: { label: "Low confidence - the system is uncertain", tone: "text-amber-300" },
-  medium: { label: "Medium confidence", tone: "text-slate-300" },
-  high: { label: "High similarity - still not proof", tone: "text-emerald-300" },
-  human: { label: "Added by a reviewer", tone: "text-sky-300" },
+  low: { label: "Low confidence - the system is uncertain", tone: "badge-warning" },
+  medium: { label: "Medium confidence", tone: "badge-neutral" },
+  high: { label: "High similarity - still not proof", tone: "badge-success" },
+  human: { label: "Added by a reviewer", tone: "badge-info" },
 };
 
 export function bandFor(score: number | null, threshold: number): keyof typeof BAND_LABEL {
