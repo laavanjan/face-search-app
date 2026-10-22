@@ -55,7 +55,7 @@ function IndexQueue({ take }: Take) {
         count={items?.length}
         description="Faces stay out of search until approved. Check the uploader had authority and consent, and that detections are real faces. Rejecting deletes the photo and its embeddings."
       />
-      {err && <Alert tone="danger" className="mb-4">{err}</Alert>}
+      {err && <Alert tone="danger" className="mb-4" role="alert">{err}</Alert>}
       {items?.length === 0 && (
         <div className="flex items-center gap-2 rounded-xl bg-sunken px-4 py-3 text-sm text-muted">
           <Icon name="check" className="h-4 w-4 text-success" /> Nothing waiting.
