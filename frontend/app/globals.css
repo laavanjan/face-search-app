@@ -2,56 +2,219 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  color-scheme: dark;
+/* --- Design tokens ---------------------------------------------------------
+   RGB channels, consumed by tailwind.config.ts. The theme follows the device
+   setting. Every text token meets WCAG AA (4.5:1) on canvas, surface, sunken
+   and its own 10% badge tint, in both themes. Re-check after changing one. */
+@layer base {
+  :root {
+    color-scheme: light;
+    --canvas: 246 247 249;
+    --surface: 255 255 255;
+    --sunken: 241 243 246;
+    --line: 226 229 235;
+    --line-strong: 203 208 217;
+    --fg: 15 23 42;
+    --muted: 71 85 105;
+    --subtle: 95 106 125;
+    --accent: 79 70 229;
+    --accent-fg: 255 255 255;
+    --success: 4 120 87;
+    --warning: 166 74 8;
+    --danger: 185 28 28;
+    --info: 3 105 161;
+    --shadow: 15 23 42;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --canvas: 10 12 16;
+      --surface: 19 22 29;
+      --sunken: 26 30 39;
+      --line: 40 45 56;
+      --line-strong: 58 64 78;
+      --fg: 233 236 241;
+      --muted: 170 178 192;
+      --subtle: 136 145 161;
+      --accent: 140 146 250;
+      --accent-fg: 12 14 22;
+      --success: 52 211 153;
+      --warning: 251 191 36;
+      --danger: 248 113 113;
+      --info: 56 189 248;
+      --shadow: 0 0 0;
+    }
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply min-h-screen bg-canvas text-fg;
+  }
+
+  ::selection {
+    background: rgb(var(--accent) / 0.25);
+  }
+
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="range"] {
+    accent-color: rgb(var(--accent));
+  }
+
+  input[type="checkbox"],
+  input[type="radio"] {
+    @apply h-5 w-5 shrink-0;
+  }
 }
 
-html, body {
-  min-height: 100%;
-  background:
-    radial-gradient(1200px 800px at 10% -10%, rgba(124, 58, 237, 0.25), transparent 60%),
-    radial-gradient(900px 600px at 100% 0%, rgba(34, 211, 238, 0.18), transparent 60%),
-    #06080f;
-  color: #e5e7eb;
-}
+@layer components {
+  /* Surfaces */
+  .card {
+    @apply rounded-2xl border border-line bg-surface shadow-card;
+  }
 
-.glass {
-  background: rgba(17, 24, 39, 0.6);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-}
+  .section-title {
+    @apply text-base font-semibold text-fg;
+  }
 
-.chip {
-  @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs
-         border border-white/10 bg-white/5 text-slate-300;
-}
+  /* Small labels: chip = neutral metadata, badge-* = status with meaning */
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-line bg-sunken px-2 py-0.5 text-xs font-medium text-muted;
+  }
 
-.btn {
-  @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl
-         bg-gradient-to-tr from-accent to-accent2 text-white font-medium
-         shadow-lg shadow-accent/20 hover:brightness-110 disabled:opacity-50
-         disabled:cursor-not-allowed transition;
-}
+  .badge {
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset;
+  }
+  .badge-neutral { @apply bg-sunken text-muted ring-line-strong; }
+  .badge-accent { @apply bg-accent/10 text-accent ring-accent/30; }
+  .badge-success { @apply bg-success/10 text-success ring-success/30; }
+  .badge-warning { @apply bg-warning/10 text-warning ring-warning/30; }
+  .badge-danger { @apply bg-danger/10 text-danger ring-danger/30; }
+  .badge-info { @apply bg-info/10 text-info ring-info/30; }
 
-.btn-ghost {
-  @apply inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10
-         text-slate-200 hover:bg-white/5 transition;
-}
+  /* Buttons - every variant keeps a 44px touch target (WCAG 2.5.8) */
+  .btn,
+  .btn-secondary,
+  .btn-ghost,
+  .btn-danger,
+  .btn-success {
+    @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 text-sm font-medium
+           transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    min-height: 44px;
+  }
+  .btn { @apply bg-accent text-accent-fg shadow-sm hover:bg-accent/90; }
+  .btn-secondary { @apply border border-line-strong bg-surface text-fg shadow-sm hover:bg-sunken; }
+  .btn-ghost { @apply text-muted hover:bg-sunken hover:text-fg; }
+  .btn-danger { @apply border border-danger/30 bg-danger/5 text-danger hover:bg-danger/10; }
+  .btn-success { @apply border border-success/30 bg-success/5 text-success hover:bg-success/10; }
+  .btn-sm { @apply px-3 text-xs; }
 
-.dropzone {
-  @apply relative flex flex-col items-center justify-center rounded-2xl
-         border-2 border-dashed border-white/15 bg-white/[0.02] p-10
-         text-slate-300 hover:border-accent/60 hover:bg-white/[0.04] transition
-         cursor-pointer;
-}
+  /* Form controls */
+  .label {
+    @apply mb-1.5 block text-sm font-medium text-fg;
+  }
+  .hint {
+    @apply text-xs text-subtle;
+  }
+  .input,
+  .select,
+  .textarea {
+    @apply block w-full rounded-xl border border-line-strong bg-surface px-3 text-sm text-fg shadow-sm
+           transition-colors placeholder:text-subtle focus:border-accent;
+  }
+  .input,
+  .select {
+    min-height: 44px;
+  }
+  .textarea {
+    @apply py-2.5;
+  }
+  .select {
+    appearance: none;
+    padding-right: 2.25rem;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238891a1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem;
+  }
+  .input-error {
+    @apply border-danger focus:border-danger;
+  }
 
-.dropzone.active {
-  @apply border-accent bg-accent/10;
+  /* A labelled checkbox / radio presented as a selectable card */
+  .choice {
+    @apply flex cursor-pointer items-start gap-3 rounded-xl border border-line bg-surface p-3.5 text-sm text-fg
+           transition-colors hover:border-line-strong has-[:checked]:border-accent has-[:checked]:bg-accent/5;
+  }
+
+  .link {
+    @apply font-medium text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent;
+  }
+
+  .step-num {
+    @apply flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-accent/10 text-xs font-semibold text-accent ring-1 ring-inset ring-accent/30;
+  }
+  .step-num.done {
+    @apply bg-success/10 text-success ring-success/30;
+  }
+
+  .dropzone {
+    @apply relative flex min-h-[220px] cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed
+           border-line-strong bg-sunken/60 p-8 text-center transition-colors hover:border-accent/60 hover:bg-accent/5;
+  }
+  .dropzone.active {
+    @apply border-accent bg-accent/10;
+  }
+
+  .skeleton {
+    @apply animate-pulse bg-sunken;
+  }
+
+  /* Long-form text pages (privacy, accessibility, appeal) */
+  .prose-doc {
+    @apply space-y-4 text-[15px] leading-7 text-muted;
+  }
+  .prose-doc h2 {
+    @apply pt-2 text-lg font-semibold text-fg;
+  }
+  .prose-doc ul {
+    @apply list-disc space-y-1.5 pl-5 marker:text-subtle;
+  }
+  .prose-doc ol {
+    @apply list-decimal space-y-1.5 pl-5 marker:text-subtle;
+  }
+  .prose-doc strong {
+    @apply font-semibold text-fg;
+  }
+  .prose-doc a {
+    @apply font-medium text-accent underline decoration-accent/40 underline-offset-2 hover:decoration-accent;
+  }
+  .prose-doc code {
+    @apply rounded bg-sunken px-1 py-0.5 font-mono text-[0.85em] text-fg;
+  }
+
+  .table {
+    @apply w-full text-left text-sm;
+  }
+  .table th {
+    @apply border-b border-line px-3 py-2.5 text-xs font-medium uppercase tracking-wide text-subtle;
+  }
+  .table td {
+    @apply border-b border-line px-3 py-2.5 align-top;
+  }
+  .table tbody tr:last-child td,
+  .table tbody tr:last-child th {
+    @apply border-b-0;
+  }
 }
 
 /* --- Accessibility (ACC-01): visible focus, skip link, reduced motion, readable sizes --- */
 :focus-visible {
-  outline: 3px solid #fbbf24;
+  outline: 3px solid rgb(var(--accent));
   outline-offset: 2px;
   border-radius: 0.5rem;
 }
@@ -63,17 +226,12 @@ html, body {
   z-index: 50;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
-  background: #fbbf24;
-  color: #111827;
+  background: rgb(var(--accent));
+  color: rgb(var(--accent-fg));
   font-weight: 600;
 }
 .skip-link:focus {
   top: 1rem;
-}
-
-.btn,
-.btn-ghost {
-  min-height: 44px; /* touch target size (WCAG 2.5.8) */
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -88,9 +246,11 @@ html, body {
 }
 
 @media (forced-colors: active) {
-  .glass,
+  .card,
   .dropzone,
-  .chip {
+  .chip,
+  .badge,
+  .choice {
     border: 1px solid CanvasText;
   }
 }
