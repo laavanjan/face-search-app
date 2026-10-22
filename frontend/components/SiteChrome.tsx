@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Icon } from "@/components/ui";
 import { LOCALES, setLocale, useT, type Locale } from "@/lib/i18n";
 
 /** Skip link for keyboard and screen-reader users (ACC-01). */
@@ -16,10 +17,11 @@ export function SkipLink() {
 export function LanguageSelect() {
   const { t, locale } = useT();
   return (
-    <label className="flex items-center gap-2 text-xs text-slate-300">
-      <span>{t("lang.label")}</span>
+    <label className="relative flex items-center text-sm text-muted">
+      <span className="sr-only">{t("lang.label")}</span>
+      <Icon name="globe" className="pointer-events-none absolute left-3 h-4 w-4 text-subtle" />
       <select
-        className="rounded-lg bg-black/30 border border-white/20 p-1"
+        className="select !w-auto !pl-9 !shadow-none"
         value={locale}
         onChange={(e) => setLocale(e.target.value as Locale)}
       >
@@ -37,10 +39,14 @@ export function LanguageSelect() {
 export function AiNotice() {
   const { t } = useT();
   return (
-    <div role="note" className="mb-8 rounded-xl border border-amber-300/30 bg-amber-300/10 px-4 py-2 text-sm text-amber-50">
-      <strong>{t("banner.title")}</strong> {t("banner.body")}{" "}
-      <Link href="/privacy" className="underline">{t("banner.privacy")}</Link> ·{" "}
-      <Link href="/appeal" className="underline">{t("banner.challenge")}</Link>
+    <div role="note" className="mb-8 flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/5 px-4 py-3 text-sm">
+      <span className="badge badge-warning mt-px">AI</span>
+      <p className="leading-relaxed text-muted">
+        <strong className="font-semibold text-fg">{t("banner.title")}</strong> {t("banner.body")}{" "}
+        <Link href="/privacy" className="link">{t("banner.privacy")}</Link>
+        <span aria-hidden className="mx-1.5 text-subtle">·</span>
+        <Link href="/appeal" className="link">{t("banner.challenge")}</Link>
+      </p>
     </div>
   );
 }
@@ -48,13 +54,21 @@ export function AiNotice() {
 export function SiteFooter() {
   const { t } = useT();
   return (
-    <footer className="mt-16 border-t border-white/10 pt-6 text-sm text-slate-300 flex flex-wrap gap-4 justify-between">
-      <span>{t("footer.free")}</span>
-      <nav aria-label="Footer" className="flex gap-4">
-        <Link href="/accessibility" className="underline">{t("footer.accessibility")}</Link>
-        <Link href="/transparency" className="underline">{t("footer.transparency")}</Link>
-        <Link href="/appeal" className="underline">{t("nav.appeal")}</Link>
-      </nav>
+    <footer className="mt-16 border-t border-line">
+      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-4 py-8 text-sm text-muted sm:flex-row sm:items-center sm:justify-between sm:px-6">
+        <span>{t("footer.free")}</span>
+        <nav aria-label="Footer" className="flex flex-wrap gap-x-5 gap-y-2">
+          {[
+            ["/accessibility", t("footer.accessibility")],
+            ["/transparency", t("footer.transparency")],
+            ["/appeal", t("nav.appeal")],
+          ].map(([href, label]) => (
+            <Link key={href} href={href} className="underline decoration-line-strong underline-offset-4 hover:text-fg hover:decoration-fg">
+              {label}
+            </Link>
+          ))}
+        </nav>
+      </div>
     </footer>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Alert } from "@/components/ui";
 import { getHealth, type Health } from "@/lib/api";
 
 export default function StatusBar() {
@@ -30,25 +31,67 @@ export default function StatusBar() {
 
   if (err) {
     return (
-      <div className="glass rounded-2xl p-4 text-sm text-red-300">
-        Backend unreachable. Start it with{" "}
-        <code className="bg-black/30 px-1 rounded">uvicorn app.main:app --reload</code>
-      </div>
+      <Alert tone="danger" title="Backend unreachable">
+        Start it with <code className="rounded bg-sunken px-1 font-mono text-xs text-fg">uvicorn app.main:app --reload</code>
+      </Alert>
     );
   }
-  if (!h) return <div className="glass rounded-2xl p-4 text-sm text-slate-400">Loading…</div>;
+
+  const warnings = h
+    ? [
+        h.indexing_paused && "Indexing paused",
+        h.search_paused && "Search paused",
+        !h.config_approved && "Config change awaiting approval",
+      ].filter(Boolean)
+    : [];
+  const rows: [string, string | number][] = h
+    ? [
+        ["Detector", h.detector],
+        ["Model", h.model],
+        ["Storage", h.storage],
+        ["Vectors", h.vector_store],
+        ...(h.indexed_faces !== null ? ([["Indexed faces", h.indexed_faces]] as [string, number][]) : []),
+      ]
+    : [];
 
   return (
-    <div className="glass rounded-2xl p-4 flex flex-wrap items-center gap-2 text-sm">
-      <span className="chip">status · {h.status}</span>
-      <span className="chip">detector · {h.detector}</span>
-      <span className="chip">model · {h.model}</span>
-      <span className="chip">storage · {h.storage}</span>
-      <span className="chip">vectors · {h.vector_store}</span>
-      {h.indexed_faces !== null && <span className="chip">indexed · {h.indexed_faces} face(s)</span>}
-      {h.indexing_paused && <span className="chip text-amber-300">indexing paused</span>}
-      {h.search_paused && <span className="chip text-amber-300">search paused</span>}
-      {!h.config_approved && <span className="chip text-amber-300">config change awaiting approval</span>}
-    </div>
+    <section aria-label="System status" className="card p-5">
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-fg">System status</h2>
+        {h ? (
+          <span className={`badge ${warnings.length ? "badge-warning" : "badge-success"}`}>
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />
+            {warnings.length ? "Attention" : h.status === "ok" ? "Operational" : h.status}
+          </span>
+        ) : (
+          <span className="skeleton h-5 w-20 rounded-full" />
+        )}
+      </div>
+      {h ? (
+        <>
+          <dl className="space-y-2 text-sm">
+            {rows.map(([k, v]) => (
+              <div key={k} className="flex items-center justify-between gap-3">
+                <dt className="text-muted">{k}</dt>
+                <dd className="truncate font-mono text-xs text-fg">{v}</dd>
+              </div>
+            ))}
+          </dl>
+          {warnings.length > 0 && (
+            <ul className="mt-3 space-y-1 border-t border-line pt-3 text-xs font-medium text-warning">
+              {warnings.map((w) => (
+                <li key={w as string}>{w}</li>
+              ))}
+            </ul>
+          )}
+        </>
+      ) : (
+        <div className="space-y-2">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="skeleton h-4 rounded" />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

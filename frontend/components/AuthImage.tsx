@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Icon } from "@/components/ui";
 import { caseQueryImageUrl, photoObjectUrl } from "@/lib/api";
 
 type Props = {
@@ -33,11 +34,12 @@ export default function AuthImage({ photoId, caseId, alt, className }: Props) {
 
   if (failed)
     return (
-      <div className={`${className ?? ""} flex items-center justify-center bg-white/5 text-xs text-slate-500`}>
+      <div className={`${className ?? ""} flex flex-col items-center justify-center gap-1 bg-sunken text-xs text-subtle`}>
+        <Icon name="image" className="h-5 w-5" />
         unavailable
       </div>
     );
-  if (!src) return <div className={`${className ?? ""} bg-white/5 animate-pulse`} />;
+  if (!src) return <div className={`${className ?? ""} skeleton`} />;
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt={alt} className={className} />;
+  return <img src={src} alt={alt} className={`${className ?? ""} bg-sunken`} />;
 }

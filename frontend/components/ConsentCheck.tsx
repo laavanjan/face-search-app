@@ -13,16 +13,11 @@ type Props = { checked: boolean; onChange: (v: boolean) => void; purpose: "index
 export default function ConsentCheck({ checked, onChange, purpose }: Props) {
   const { t } = useT();
   return (
-    <label className="flex items-start gap-3 text-sm text-slate-200 mb-4 max-w-2xl">
-      <input
-        type="checkbox"
-        className="mt-1 h-5 w-5 accent-accent"
-        checked={checked}
-        onChange={(e) => onChange(e.target.checked)}
-      />
-      <span>
+    <label className="choice">
+      <input type="checkbox" className="mt-0.5" checked={checked} onChange={(e) => onChange(e.target.checked)} />
+      <span className="leading-relaxed">
         {purpose === "index" ? t("consent.index") : t("consent.search")}{" "}
-        <Link href="/privacy" className="underline text-slate-100">{t("consent.link")}</Link>.
+        <Link href="/privacy" className="link">{t("consent.link")}</Link>.
       </span>
     </label>
   );

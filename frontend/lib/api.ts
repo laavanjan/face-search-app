@@ -322,3 +322,5 @@ export const getAudit = (limit = 100) =>
 
 export const fmtDate = (ts: number | null | undefined) =>
   ts ? new Date(ts * 1000).toLocaleString() : "—";
+export const fmtDay = (ts: number | null | undefined) =>
+  ts ? new Date(ts * 1000).toLocaleDateString() : "—";
