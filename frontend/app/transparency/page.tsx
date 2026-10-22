@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Alert, PageHeader } from "@/components/ui";
 import { getTransparency } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 
@@ -25,49 +26,64 @@ export default function TransparencyPage() {
   ];
 
   return (
-    <section className="glass rounded-2xl p-6 sm:p-8 space-y-4 max-w-3xl text-slate-200">
-      <h1 className="text-3xl font-semibold tracking-tight">{t("footer.transparency")}</h1>
-      <p>What this system did in the last 90 days, published for anyone to check. Small numbers are hidden to protect people.</p>
-      {err && <div role="alert" className="text-red-300">{err}</div>}
+    <div className="space-y-6">
+      <PageHeader
+        title={t("footer.transparency")}
+        description="What this system did in the last 90 days, published for anyone to check. Small numbers are hidden to protect people."
+      />
+      {err && <Alert tone="danger">{err}</Alert>}
+      {!r && !err && (
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
+          {rows.map(([k]) => (
+            <div key={k} className="skeleton h-24 rounded-2xl" />
+          ))}
+        </div>
+      )}
       {r && (
         <>
-          <table className="w-full text-sm">
-            <caption className="sr-only">Activity in the last {r.period_days} days</caption>
-            <tbody>
+          <section aria-labelledby="activity-title">
+            <h2 id="activity-title" className="sr-only">Activity in the last {r.period_days} days</h2>
+            <dl className="grid grid-cols-2 gap-4 md:grid-cols-3">
               {rows.map(([k, label]) => (
-                <tr key={k} className="border-b border-white/10">
-                  <th scope="row" className="text-left font-normal py-2">{label}</th>
-                  <td className="text-right">{String(r[k])}</td>
-                </tr>
+                <div key={k} className="card p-4 sm:p-5">
+                  <dt className="text-sm text-muted">{label}</dt>
+                  <dd className="mt-1 text-2xl font-semibold tabular-nums tracking-tight text-fg sm:text-3xl">{String(r[k])}</dd>
+                </div>
               ))}
-            </tbody>
-          </table>
-          <h2 className="text-lg font-medium text-slate-100">Appeals, misuse reports and help requests</h2>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-slate-300">
-                <th scope="col" className="py-2">Type</th>
-                <th scope="col">Received</th>
-                <th scope="col">Resolved</th>
-                <th scope="col">Upheld</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(r.appeals_and_reports ?? {}).map(([k, v]: [string, any]) => (
-                <tr key={k} className="border-b border-white/10">
-                  <th scope="row" className="text-left font-normal py-2">{k.replace(/_/g, " ")}</th>
-                  <td>{String(v.received)}</td>
-                  <td>{String(v.resolved)}</td>
-                  <td>{String(v.upheld)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <p className="text-sm text-slate-300">
-            Median days to resolve: {r.median_days_to_resolve ?? "not enough cases yet"}. {r.how_to_report_harm}.
-          </p>
+            </dl>
+          </section>
+          <section className="card p-5 sm:p-6">
+            <h2 className="section-title mb-4">Appeals, misuse reports and help requests</h2>
+            <div className="overflow-x-auto">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th scope="col">Type</th>
+                    <th scope="col" className="text-right">Received</th>
+                    <th scope="col" className="text-right">Resolved</th>
+                    <th scope="col" className="text-right">Upheld</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(r.appeals_and_reports ?? {}).map(([k, v]: [string, any]) => (
+                    <tr key={k}>
+                      <th scope="row" className="!text-sm !font-normal !normal-case !tracking-normal text-fg">
+                        {k.charAt(0).toUpperCase() + k.slice(1).replace(/_/g, " ")}
+                      </th>
+                      <td className="text-right tabular-nums">{String(v.received)}</td>
+                      <td className="text-right tabular-nums">{String(v.resolved)}</td>
+                      <td className="text-right tabular-nums">{String(v.upheld)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-4 border-t border-line pt-4 text-sm text-muted">
+              Median days to resolve: <span className="font-medium text-fg">{r.median_days_to_resolve ?? "not enough cases yet"}</span>. {r.how_to_report_harm}.
+            </p>
+          </section>
         </>
       )}
-    </section>
+    </div>
   );
 }
