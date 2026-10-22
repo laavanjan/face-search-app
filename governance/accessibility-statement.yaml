@@ -11,7 +11,7 @@ language_accessibility:
 disability_accessibility:
   keyboard: "All controls reachable by keyboard; Dropzone is role=button with Enter/Space; visible :focus-visible outline"
   screen_readers: "Skip link, landmarks (header/main/footer nav), labelled inputs, role=status/alert live messages, decorative icons aria-hidden"
-  vision: "Contrast raised to slate-200/300 on dark; zoom to 200%; forced-colors mode borders; 44px touch targets"
+  vision: "Light and dark themes follow the device setting; every text colour token meets 4.5:1 in both (frontend/app/globals.css); status is shown as text, never colour alone; zoom to 200%; forced-colors mode borders; 44px touch targets"
   motion: "prefers-reduced-motion disables animations"
   cognitive: "One task per screen, plain language, required choices never pre-selected"
 device_accessibility:
