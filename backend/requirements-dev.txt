@@ -1,7 +1,7 @@
 # Offline evaluation + test tooling. Not installed in the production image.
 -r requirements.txt
-fairlearn==0.10.0       # bias measurement + mitigation (app/services/fairness.py)
+fairlearn==0.15.0       # bias measurement + mitigation (app/services/fairness.py)
 pandas==2.2.3
-scikit-learn==1.5.2
-pyyaml==6.0.2           # reads governance/*.yaml thresholds
+scikit-learn==1.9.1
+pyyaml==6.0.3           # reads governance/*.yaml thresholds
 codecarbon==2.7.1       # energy/CO2e tracking of evaluation runs (app/services/carbon.py)
