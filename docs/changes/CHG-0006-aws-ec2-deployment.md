@@ -11,6 +11,7 @@
 
 ## What changes
 - `.github/workflows/deploy.yml`: after CI succeeds on `main`, builds the backend and frontend images, pushes them to ECR and deploys them to one EC2 host through SSM Run Command. AWS access is by GitHub OIDC, limited to the `production` environment of this repository.
+- `backend/Dockerfile`: two-stage build. `insightface` compiles a C++ extension and needs `g++`; the compiler stays in the build stage and the runtime image gets only the virtualenv. Same dependencies, same entrypoint.
 - `frontend/Dockerfile`, `docker-compose.prod.yml`, `deploy/` (Caddyfile, `bootstrap-ec2.sh`, `deploy.sh`, `README.md`), `.dockerignore` files.
 - No change to `backend/app/**`, thresholds, model or retention settings.
 
