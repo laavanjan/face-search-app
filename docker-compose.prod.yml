@@ -1,0 +1,52 @@
+# Production stack for a single EC2 host (see deploy/README.md).
+# Run by deploy/deploy.sh; image tags and SITE_ADDRESS come from /opt/face-search/stack.env.
+# Only Caddy publishes ports. Qdrant, the backend and the frontend stay on the internal network.
+
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.12.1
+    restart: unless-stopped
+    volumes:
+      - /opt/face-search/data/qdrant:/qdrant/storage
+
+  backend:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE is not set}
+    restart: unless-stopped
+    # Secrets live on the server only (never in git or GitHub).
+    env_file: /opt/face-search/backend.env
+    environment:
+      ENVIRONMENT: production
+      QDRANT_URL: http://qdrant:6333
+      LOCAL_PHOTO_DIR: /data/photos
+      GOVERNANCE_DB_PATH: /data/governance/governance.db
+      ALLOWED_ORIGINS: https://${SITE_ADDRESS:?SITE_ADDRESS is not set}
+    volumes:
+      - /opt/face-search/data/photos:/data/photos
+      - /opt/face-search/data/governance:/data/governance
+      # InsightFace downloads ~200MB of model weights on first use; keep them across deploys.
+      - /opt/face-search/data/insightface:/root/.insightface
+    depends_on: [qdrant]
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE is not set}
+    restart: unless-stopped
+    depends_on: [backend]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [frontend]
+
+volumes:
+  caddy_data:
+  caddy_config:

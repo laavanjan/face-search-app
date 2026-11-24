@@ -1,0 +1,8 @@
+# Files run on Linux (EC2 host / containers) must stay LF, even when checked out on Windows.
+deploy/*.sh text eol=lf
+deploy/Caddyfile text eol=lf
+*/Dockerfile text eol=lf
+Dockerfile text eol=lf
+*.dockerignore text eol=lf
+.github/workflows/*.yml text eol=lf
+docker-compose*.yml text eol=lf

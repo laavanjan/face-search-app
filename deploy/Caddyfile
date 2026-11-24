@@ -1,0 +1,15 @@
+# TLS terminates here. A hostname like 1-2-3-4.sslip.io (or your own domain) gets a
+# free Let's Encrypt certificate automatically; ports 80 and 443 must be reachable.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		-Server
+	}
+
+	# The frontend proxies /api/* and /photos/* to the backend (next.config.mjs).
+	reverse_proxy frontend:3000
+}

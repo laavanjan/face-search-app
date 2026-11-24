@@ -1,0 +1,116 @@
+name: Deploy
+
+# Deploys main to the AWS EC2 host after CI passes. Setup: deploy/README.md.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  id-token: write # GitHub OIDC -> AWS, no long-lived AWS keys stored in GitHub
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  BACKEND_REPO: face-search-backend
+  FRONTEND_REPO: face-search-frontend
+
+jobs:
+  deploy:
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    # The "production" environment lets you require a manual approval before each deploy
+    # (Settings -> Environments). The AWS role trusts only this environment.
+    environment: production
+    steps:
+      - name: Resolve commit
+        id: ref
+        run: echo "sha=${{ github.event.workflow_run.head_sha || github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.ref.outputs.sha }}
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build and push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.BACKEND_REPO }}:${{ steps.ref.outputs.sha }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.BACKEND_REPO }}:latest
+          cache-from: type=gha,scope=backend
+          cache-to: type=gha,scope=backend,mode=max
+
+      - name: Build and push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: frontend
+          push: true
+          build-args: NEXT_PUBLIC_API_URL=http://backend:8000
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.FRONTEND_REPO }}:${{ steps.ref.outputs.sha }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.FRONTEND_REPO }}:latest
+          cache-from: type=gha,scope=frontend
+          cache-to: type=gha,scope=frontend,mode=max
+
+      - name: Deploy on EC2 via SSM
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.ref.outputs.sha }}
+          REGISTRY: ${{ steps.ecr.outputs.registry }}
+          AWS_REGION: ${{ vars.AWS_REGION }}
+          INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          # The host fetches this commit (for docker-compose.prod.yml, Caddyfile and
+          # deploy.sh) with this job's short-lived token, then runs deploy.sh.
+          script=$(cat <<EOF
+          set -euo pipefail
+          REPO_DIR=/opt/face-search/repo
+          [ -d "\$REPO_DIR/.git" ] || git init -q "\$REPO_DIR"
+          cd "\$REPO_DIR"
+          auth=\$(printf 'x-access-token:%s' '$GH_TOKEN' | base64 -w0)
+          git -c "http.extraheader=AUTHORIZATION: basic \$auth" fetch -q --depth 1 "https://github.com/$REPOSITORY.git" "$SHA"
+          git checkout -qf FETCH_HEAD
+          REGISTRY='$REGISTRY' AWS_REGION='$AWS_REGION' IMAGE_TAG='$SHA' bash deploy/deploy.sh
+          EOF
+          )
+          jq -n --arg s "$script" '{commands: [$s]}' > params.json
+
+          cmd_id=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name AWS-RunShellScript \
+            --comment "deploy $SHA" \
+            --timeout-seconds 1200 \
+            --parameters file://params.json \
+            --query Command.CommandId --output text)
+          echo "SSM command: $cmd_id"
+
+          status=Pending
+          for _ in $(seq 1 240); do
+            status=$(aws ssm get-command-invocation --command-id "$cmd_id" --instance-id "$INSTANCE_ID" \
+              --query Status --output text 2>/dev/null || echo Pending)
+            case "$status" in Pending|InProgress|Delayed) sleep 5 ;; *) break ;; esac
+          done
+
+          aws ssm get-command-invocation --command-id "$cmd_id" --instance-id "$INSTANCE_ID" \
+            --query '[StandardOutputContent, StandardErrorContent]' --output text || true
+          echo "Final status: $status"
+          [ "$status" = Success ]
