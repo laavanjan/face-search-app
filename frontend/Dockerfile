@@ -6,7 +6,9 @@ FROM node:20-alpine AS build
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# "npm install" matches the CI build (.github/workflows/ci.yml); "npm ci" rejects the
+# lockfile under the npm bundled with node:20.
+RUN npm install --no-audit --no-fund
 COPY . .
 ARG NEXT_PUBLIC_API_URL=http://backend:8000
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
