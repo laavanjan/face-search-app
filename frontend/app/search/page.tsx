@@ -269,7 +269,7 @@ export default function SearchPage() {
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {res.matches.map((m) => (
                 <div key={m.face_id} className="card overflow-hidden">
-                  <AuthImage photoId={m.photo_id} alt="confirmed match" className="aspect-square w-full object-cover" />
+                  <AuthImage enlarge photoId={m.photo_id} alt="confirmed match" className="aspect-square w-full object-cover" />
                   <div className="space-y-2 p-3 text-xs">
                     <span className={`badge ${BAND_LABEL[m.confidence_band]?.tone}`} title={m.band_meaning}>
                       {BAND_LABEL[m.confidence_band]?.label}

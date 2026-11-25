@@ -81,7 +81,7 @@ export default function GalleryPage() {
           {items.map((it) => (
             <li key={it.photo_id} className="card group overflow-hidden">
               <div className="relative">
-                <AuthImage photoId={it.photo_id} alt="indexed photo" className="aspect-square w-full object-cover" />
+                <AuthImage enlarge photoId={it.photo_id} alt="indexed photo" className="aspect-square w-full object-cover" />
                 <div className="absolute left-2 top-2 rounded-full bg-surface/90 shadow-sm backdrop-blur">
                   <StatusBadge status={it.review_status} />
                 </div>

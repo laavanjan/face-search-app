@@ -64,7 +64,7 @@ function IndexQueue({ take }: Take) {
       <ul className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
         {items?.map((p) => (
           <li key={p.photo_id} className="overflow-hidden rounded-xl border border-line bg-surface">
-            <AuthImage photoId={p.photo_id} alt="pending photo" className="aspect-square w-full object-cover" />
+            <AuthImage enlarge photoId={p.photo_id} alt="pending photo" className="aspect-square w-full object-cover" />
             <div className="space-y-2 p-3 text-xs text-muted">
               <div className="flex items-center justify-between gap-2">
                 <span>{p.faces.length} face(s)</span>
@@ -166,7 +166,7 @@ function CaseDetail({ id, onChange, take }: Take & { id: string; onChange: () =>
                         : "border-line"
                   }`}
                 >
-                  <AuthImage photoId={k.photo_id} alt="candidate" className="aspect-square w-full object-cover" />
+                  <AuthImage enlarge photoId={k.photo_id} alt="candidate" className="aspect-square w-full object-cover" />
                   <div className="space-y-2 p-2.5 text-xs text-muted">
                     <StatusBadge status={k.decision} />
                     {showScores ? (
