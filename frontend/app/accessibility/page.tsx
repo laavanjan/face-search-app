@@ -41,7 +41,7 @@ export default function AccessibilityPage() {
           <ul>
             <li>Target: WCAG 2.2 level AA. Works with keyboard only (visible focus, skip link) and screen readers (labels, live status messages).</li>
             <li>Text can be zoomed to 200% and the layout works on phones, tablets and desktops. Motion is reduced if your device asks for it. Light and dark themes follow your device setting.</li>
-            <li>Languages: English and Spanish (choose at the top of the page). Other languages: ask below and a person will help.</li>
+            <li>Language: the site is in English. For help in another language, ask below and a person will help.</li>
             <li>Plain language first; technical details are behind &quot;Technical details&quot;.</li>
           </ul>
 

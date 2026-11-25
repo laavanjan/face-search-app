@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Icon } from "@/components/ui";
-import { LOCALES, setLocale, useT, type Locale } from "@/lib/i18n";
+import { useT } from "@/lib/i18n";
 
 /** Skip link for keyboard and screen-reader users (ACC-01). */
 export function SkipLink() {
@@ -11,27 +11,6 @@ export function SkipLink() {
     <a href="#main" className="skip-link">
       {t("skip")}
     </a>
-  );
-}
-
-export function LanguageSelect() {
-  const { t, locale } = useT();
-  return (
-    <label className="relative flex items-center text-sm text-muted">
-      <span className="sr-only">{t("lang.label")}</span>
-      <Icon name="globe" className="pointer-events-none absolute left-3 h-4 w-4 text-subtle" />
-      <select
-        className="select !w-auto !pl-9 !shadow-none"
-        value={locale}
-        onChange={(e) => setLocale(e.target.value as Locale)}
-      >
-        {(Object.keys(LOCALES) as Locale[]).map((l) => (
-          <option key={l} value={l} lang={l}>
-            {(LOCALES[l] as Record<string, string>)["lang.name"]}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }
 

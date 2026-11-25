@@ -1,13 +1,12 @@
 "use client";
 
-// Language support (ACC-01, SOC-08). Strings live in /locales/*.json; English is
-// the fallback for any missing key. The choice is remembered in this browser
-// and sets <html lang> so screen readers use the right voice.
+// Language support (ACC-01, SOC-08). The UI is English-only. Strings live in
+// /locales/en.json; to add a language, add its JSON file here and put a language
+// picker back in the header. <html lang> is set for screen readers.
 import { useCallback, useEffect, useState } from "react";
 import en from "@/locales/en.json";
-import es from "@/locales/es.json";
 
-export const LOCALES = { en, es } as const;
+export const LOCALES = { en } as const;
 export type Locale = keyof typeof LOCALES;
 const KEY = "fsa.locale";
 const EVENT = "fsa-locale";

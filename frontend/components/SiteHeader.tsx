@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LanguageSelect } from "@/components/SiteChrome";
 import { Icon, type IconName } from "@/components/ui";
 import { setAccessKey } from "@/lib/api";
 import { useT } from "@/lib/i18n";
@@ -42,7 +41,6 @@ export default function SiteHeader() {
           </span>
         </Link>
         <div className="ml-auto flex items-center gap-2">
-          <LanguageSelect />
           {ready &&
             (me ? (
               <div className="flex items-center gap-1 rounded-xl border border-line bg-surface py-1 pl-1 pr-1 shadow-sm">

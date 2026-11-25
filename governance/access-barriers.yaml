@@ -7,7 +7,7 @@ cost:
   mitigations: ["no-cost assisted route: POST /support topic=cost or human_assistance, reply by phone", "small uploads save mobile data (frontend/lib/image.ts)", "runs on modest CPU hardware - no GPU cost for operators"]
 language:
   considered: "English-only UI excludes non-English speakers"
-  mitigations: ["UI in English and Spanish (frontend/locales); <html lang> set for screen readers", "support requests record the person's language; replies in that language where possible", "completeness test: tests/test_inclusion.py::test_every_language_has_every_string"]
+  mitigations: ["UI is English-only by owner decision (2026-11-24); <html lang> set for screen readers", "support requests record the person's language; replies in that language where possible", "completeness test: tests/test_inclusion.py::test_every_language_has_every_string"]
   next: "Add further languages based on support-request demand"
 literacy:
   considered: "Technical terms (embedding, cosine similarity) are a barrier"
