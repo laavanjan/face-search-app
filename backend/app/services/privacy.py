@@ -79,7 +79,7 @@ def policy() -> dict:
         "appeal_sla_days": {"acknowledge": s.appeal_ack_days, "resolve": s.appeal_resolution_days},
         "human_review": {
             "indexing_requires_approval": s.require_index_review,
-            "search_results_require_approval": True,
+            "search_results_require_approval": s.require_search_review,
         },
         "search_min_threshold": s.search_min_threshold,
         "search_max_limit": s.search_max_limit,

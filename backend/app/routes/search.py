@@ -60,7 +60,7 @@ def search_case(case_id: CaseId, p: Principal = Depends(current_principal)):
                 score=m["score"],
                 bbox=BoundingBox(x=m["bbox"][0], y=m["bbox"][1], w=m["bbox"][2], h=m["bbox"][3]),
                 source=m["source"],
-                reviewed_by=m["decided_by"],
+                reviewed_by=None if r["auto_released"] else m["decided_by"],
                 confidence_band=band,
                 band_meaning=explain.BAND_MEANING[band],
             )
@@ -73,7 +73,7 @@ def search_case(case_id: CaseId, p: Principal = Depends(current_principal)):
         threshold_applied=th,
         matches=matches,
         limitations=explain.CAVEATS,
-        provenance=provenance.stamp(body, subject=f"case:{case_id}", human_reviewed=r["status"] == "completed"),
+        provenance=provenance.stamp(body, subject=f"case:{case_id}", human_reviewed=r["status"] == "completed" and not r["auto_released"]),
     )
 
 

@@ -59,6 +59,10 @@ class Settings(BaseSettings):
 
     # --- Human oversight gates ---
     require_index_review: bool = True
+    # True (default): every search becomes a review case and matches are released
+    # only after a human completes it. False: matches are released immediately
+    # and the audit log records the case as auto-released (no human decision).
+    require_search_review: bool = True
     allow_self_review: bool = False
     search_min_threshold: float = 0.35
     search_max_limit: int = 50
@@ -138,6 +142,7 @@ class Settings(BaseSettings):
             "min_det_score": self.min_det_score,
             "search_min_threshold": self.search_min_threshold,
             "require_index_review": self.require_index_review,
+            "require_search_review": self.require_search_review,
             "allow_self_review": self.allow_self_review,
             "use_rekognition": self.use_rekognition,
             "use_s3": self.use_s3,

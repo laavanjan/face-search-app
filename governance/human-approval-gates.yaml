@@ -14,6 +14,8 @@ high_risk_decision_paths:
     approver_permission: review:decide
     fail_closed: "Nothing released unless status=completed and every candidate decided"
     test: test_search_results_released_only_after_review
+    owner_override: "REQUIRE_SEARCH_REVIEW=false (default true) releases matches at once; candidates are marked decided_by auto:no-review, the audit action is search.case_auto_released and provenance.human_reviewed is false. A governance-sensitive setting: changing it needs admin approval (CHG-0007)."
+    override_test: test_search_auto_release_when_review_switched_off
   - path: deletion
     flow: "DELETE /photos/{id} or appeal resolve action=delete_photo"
     approver_permission: photos:delete

@@ -29,6 +29,9 @@ COMPLETED = "completed"
 NO_MATCH = "no_match"
 STOPPED = "stopped"
 OPEN_STATES = {PENDING_REVIEW, ESCALATED}
+# Marks decisions made by the system instead of a person (REQUIRE_SEARCH_REVIEW=false).
+AUTO_ACTOR = "auto:no-review"
+AUTO_REASON = "released automatically: REQUIRE_SEARCH_REVIEW=false"
 
 
 def _no_self_review(owner: str | None, actor: Principal) -> None:
@@ -81,7 +84,11 @@ def create_case(
     # Every search goes to a human, even with zero candidates. Closing empty
     # searches automatically would tell the requester "this person is not in
     # the library" before review - a membership-inference leak (SEC-07).
-    status = PENDING_REVIEW
+    # With REQUIRE_SEARCH_REVIEW=false the owner has chosen to skip that gate:
+    # the case is completed at once, candidates are marked approved by AUTO_ACTOR
+    # (never by a person) and the audit log says so.
+    auto = not get_settings().require_search_review
+    status = COMPLETED if auto else PENDING_REVIEW
     with db.tx() as c:
         c.execute(
             "INSERT INTO review_cases (id, created_at, requested_by, status, threshold, query_faces, "
@@ -93,22 +100,29 @@ def create_case(
                 status,
                 threshold,
                 query_faces,
-                query_image,
+                None if auto else query_image,  # terminal cases do not keep the query photo
                 "image/png" if ext == "png" else "image/jpeg",
-                None,
-                None,
-                None,
+                AUTO_ACTOR if auto else None,
+                now if auto else None,
+                AUTO_REASON if auto else None,
             ),
         )
         for h in hits:
             pl = h.payload or {}
             c.execute(
-                "INSERT INTO review_candidates (case_id, face_id, photo_id, score, bbox, source, decision) "
-                "VALUES (?,?,?,?,?,?,?)",
-                (case_id, str(h.id), pl["photo_id"], float(h.score), json.dumps(pl.get("bbox") or [0, 0, 0, 0]), "model", "pending"),
+                "INSERT INTO review_candidates (case_id, face_id, photo_id, score, bbox, source, decision, "
+                "decided_by, decided_at, reason) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (
+                    case_id, str(h.id), pl["photo_id"], float(h.score),
+                    json.dumps(pl.get("bbox") or [0, 0, 0, 0]), "model",
+                    "approve" if auto else "pending",
+                    AUTO_ACTOR if auto else None,
+                    now if auto else None,
+                    AUTO_REASON if auto else None,
+                ),
             )
     audit.record(
-        requester, "search.case_created", case_id, decision=status,
+        requester, "search.case_auto_released" if auto else "search.case_created", case_id, decision=status,
         evidence={
             "threshold_applied": threshold,
             "purpose": purpose,
@@ -195,6 +209,7 @@ def released_matches(case_id: str, viewer: Principal) -> dict:
         "query_faces": case["query_faces"],
         "threshold_applied": case["threshold"],
         "matches": matches,
+        "auto_released": case["closed_by"] == AUTO_ACTOR,
     }
 
 

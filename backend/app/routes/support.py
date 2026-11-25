@@ -85,7 +85,7 @@ def transparency_report():
         "appeals_and_reports": {k: {kk: _bucket(vv) for kk, vv in v.items()} for k, v in sorted(by_cat.items())},
         "median_days_to_resolve": round(days[len(days) // 2], 1) if len(days) >= 5 else None,
         "safeguards": {
-            "human_review_of_every_match": True,
+            "human_review_of_every_match": s.require_search_review,
             "indexing_requires_approval": s.require_index_review,
             "photo_retention_days": s.photo_retention_days,
             "appeal_resolution_days": s.appeal_resolution_days,

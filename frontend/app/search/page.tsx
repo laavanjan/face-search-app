@@ -21,13 +21,13 @@ const STATUS_TEXT: Record<string, string> = {
 };
 
 /** Where a case is in its journey: submitted -> human review -> outcome. */
-function CaseProgress({ status }: { status: string }) {
+function CaseProgress({ status, auto = false }: { status: string; auto?: boolean }) {
   const closed = !["pending_review", "escalated"].includes(status);
   const last =
     status === "stopped" ? "Stopped" : status === "no_match" ? "No match" : closed ? "Released" : "Release";
   const steps = [
     { label: "Submitted", state: "done" },
-    { label: status === "escalated" ? "Escalated" : "Human review", state: closed ? "done" : "current" },
+    { label: status === "escalated" ? "Escalated" : auto ? "Automatic" : "Human review", state: closed ? "done" : "current" },
     { label: last, state: closed ? (status === "stopped" ? "stopped" : "done") : "todo" },
   ];
   return (
@@ -76,6 +76,8 @@ export default function SearchPage() {
   const [purpose, setPurpose] = useState<"" | "self" | "consenting_person">("");
   const [busy, setBusy] = useState(false);
   const [res, setRes] = useState<SearchCase | null>(null);
+  // Released with no human decision (server has REQUIRE_SEARCH_REVIEW=false).
+  const autoReleased = res?.status === "completed" && res.provenance?.human_reviewed === false;
   const [err, setErr] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
   const [minThreshold, setMinThreshold] = useState(0.35);
@@ -237,8 +239,12 @@ export default function SearchPage() {
                 )}
               </div>
             </div>
-            <CaseProgress status={res.status} />
-            <p className="text-sm text-muted">{STATUS_TEXT[res.status] ?? res.status}</p>
+            <CaseProgress status={res.status} auto={autoReleased} />
+            <p className="text-sm text-muted">
+              {autoReleased
+                ? "Matches are shown automatically. No person has checked them, so compare the faces yourself before relying on one."
+                : STATUS_TEXT[res.status] ?? res.status}
+            </p>
             <div className="flex flex-wrap gap-2">
               <span className="chip">threshold · {res.threshold_applied.toFixed(2)}</span>
               {res.candidate_count != null && <span className="chip">{res.candidate_count} candidate(s)</span>}
@@ -270,9 +276,13 @@ export default function SearchPage() {
                     </span>
                     <div className="flex items-center justify-between gap-2 text-muted">
                       <span>{m.score != null ? `${(m.score * 100).toFixed(1)}% similar` : "added by reviewer"}</span>
-                      <span title="verified by" className="inline-flex items-center gap-1">
-                        <Icon name="check" className="h-3 w-3 text-success" /> {m.reviewed_by}
-                      </span>
+                      {m.reviewed_by ? (
+                        <span title="verified by" className="inline-flex items-center gap-1">
+                          <Icon name="check" className="h-3 w-3 text-success" /> {m.reviewed_by}
+                        </span>
+                      ) : (
+                        <span title="No person has verified this match">not human-checked</span>
+                      )}
                     </div>
                     <button
                       className="inline-flex min-h-[44px] items-center gap-1.5 font-medium text-muted underline-offset-2 hover:text-danger hover:underline"
@@ -291,7 +301,7 @@ export default function SearchPage() {
           )}
           {me && res.status === "completed" && res.matches.length === 0 && (
             <EmptyState icon="search" title="No confirmed matches">
-              The reviewer did not confirm any candidate.
+              {autoReleased ? "No candidates were found above the threshold." : "The reviewer did not confirm any candidate."}
             </EmptyState>
           )}
         </section>

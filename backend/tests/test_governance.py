@@ -162,6 +162,31 @@ def test_search_results_released_only_after_review(client):
     assert client.get(f"/review/cases/{case}/query-image", headers=REVIEWER).status_code == 404
 
 
+def test_search_auto_release_when_review_switched_off(client, monkeypatch):
+    """REQUIRE_SEARCH_REVIEW=false is an owner decision to skip the disclosure gate.
+    Matches come back at once, but the record says no person decided."""
+    pid = _approved_photo(client, 311)
+    monkeypatch.setattr(get_settings(), "require_search_review", False)
+    # Changing a governance setting trips the config gate; bypass it for this unit check.
+    with patch("app.services.controls.ensure_allowed"):
+        r = _search(client, 311, threshold=0.0).json()
+    assert r["status"] == "completed"
+    case = r["case_id"]
+
+    out = client.get(f"/search/cases/{case}", headers=OPERATOR).json()
+    assert [m["photo_id"] for m in out["matches"]] == [pid]
+    assert out["matches"][0]["reviewed_by"] is None  # never presented as human-verified
+    assert out["provenance"]["human_reviewed"] is False
+    # Terminal case: the query photo is not retained.
+    assert client.get(f"/review/cases/{case}/query-image", headers=REVIEWER).status_code == 404
+    items = client.get("/admin/audit", params={"action": "search.case_auto_released"}, headers=ADMIN).json()["items"]
+    assert items, "auto-release must be recorded in the audit log"
+
+
+def test_search_review_is_on_by_default():
+    assert get_settings().require_search_review is True
+
+
 def test_stop_prevents_release(client):
     _approved_photo(client, 302)
     case = _search(client, 302).json()["case_id"]
