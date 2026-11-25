@@ -3,12 +3,19 @@
 import { useState } from "react";
 import Link from "next/link";
 import ConsentCheck from "@/components/ConsentCheck";
-import Dropzone from "@/components/Dropzone";
+import Dropzone, { MAX_BATCH } from "@/components/Dropzone";
 import StatusBar from "@/components/StatusBar";
 import { Alert, Icon, PageHeader, Spinner, StatusBadge } from "@/components/ui";
 import { uploadPhoto, type UploadResponse } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { useSession } from "@/lib/session";
+
+type BatchItem = {
+  name: string;
+  state: "waiting" | "uploading" | "done" | "error";
+  result?: UploadResponse;
+  error?: string;
+};
 
 export default function IndexPage() {
   const { ready, can } = useSession();
@@ -18,24 +25,28 @@ export default function IndexPage() {
   // Neither answer is pre-selected: the uploader must choose (ACC-07).
   const [minors, setMinors] = useState<"" | "no" | "yes">("");
   const [guardian, setGuardian] = useState(false);
-  const [result, setResult] = useState<UploadResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [items, setItems] = useState<BatchItem[]>([]);
 
   const minorsDone = minors === "no" || (minors === "yes" && guardian);
   const ready2 = consent && minorsDone;
+  const doneCount = items.filter((i) => i.state === "done" || i.state === "error").length;
 
-  async function handle(f: File) {
+  // Photos go up one at a time, with the same consent and under-18 answers for the whole batch.
+  async function handleMany(files: File[]) {
     setBusy(true);
-    setError(null);
-    setResult(null);
-    try {
-      const r = await uploadPhoto(f, consent, { present: minors === "yes", guardianConsent: guardian });
-      setResult(r);
-    } catch (e: any) {
-      setError(e.message ?? "upload failed");
-    } finally {
-      setBusy(false);
+    setItems(files.map((f) => ({ name: f.name, state: "waiting" as const })));
+    const patch = (i: number, p: Partial<BatchItem>) =>
+      setItems((cur) => cur.map((it, j) => (j === i ? { ...it, ...p } : it)));
+    for (let i = 0; i < files.length; i++) {
+      patch(i, { state: "uploading" });
+      try {
+        const r = await uploadPhoto(files[i], consent, { present: minors === "yes", guardianConsent: guardian });
+        patch(i, { state: "done", result: r });
+      } catch (e: any) {
+        patch(i, { state: "error", error: e.message ?? "upload failed" });
+      }
     }
+    setBusy(false);
   }
 
   return (
@@ -82,30 +93,51 @@ export default function IndexPage() {
               <li className="flex gap-4">
                 <span className="step-num">3</span>
                 <div className="min-w-0 flex-1">
-                  <Dropzone onFile={handle} disabled={busy || !ready2} locked={!ready2} />
+                  <Dropzone
+                    onFiles={handleMany}
+                    disabled={busy || !ready2}
+                    locked={!ready2}
+                    hint={`JPG, PNG or WebP, up to 15 MB each. Choose up to ${MAX_BATCH} photos at once.`}
+                  />
+                  <p className="mt-2 text-xs text-subtle">Your answers in steps 1 and 2 apply to every photo in the batch.</p>
                 </div>
               </li>
             </ol>
           )}
           {busy && (
             <div role="status" className="mt-5 flex items-center gap-2 text-sm text-muted">
-              <Spinner /> {t("index.busy")}
+              <Spinner /> {t("index.busy")} ({doneCount} of {items.length} done)
             </div>
           )}
-          {error && <Alert tone="danger" className="mt-5">{error}</Alert>}
-          {result && (
-            <div role="status" className="mt-5">
-              <Alert tone="success" title={result.message}>
-                <div className="mt-1 flex flex-wrap items-center gap-2">
-                  <StatusBadge status={result.review_status} label={`Review · ${result.review_status}`} />
-                  {result.faces.map((f) => (
-                    <span key={f.face_id} className="chip font-mono">
-                      det {f.det_score.toFixed(2)} · q {f.quality.toFixed(2)}
+          {items.length > 0 && (
+            <ul className="mt-5 space-y-3" aria-label="Upload results">
+              {items.map((it, i) => (
+                <li key={`${it.name}-${i}`} className="rounded-xl border border-line p-3 text-sm">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="min-w-0 truncate font-medium text-fg">{it.name}</span>
+                    <span className="shrink-0 text-xs text-subtle">
+                      {it.state === "waiting" && "Waiting"}
+                      {it.state === "uploading" && "Uploading…"}
                     </span>
-                  ))}
-                </div>
-              </Alert>
-            </div>
+                  </div>
+                  {it.state === "error" && <Alert tone="danger" className="mt-2">{it.error}</Alert>}
+                  {it.state === "done" && it.result && (
+                    <div role="status" className="mt-2">
+                      <Alert tone="success" title={it.result.message}>
+                        <div className="mt-1 flex flex-wrap items-center gap-2">
+                          <StatusBadge status={it.result.review_status} label={`Review · ${it.result.review_status}`} />
+                          {it.result.faces.map((f) => (
+                            <span key={f.face_id} className="chip font-mono">
+                              det {f.det_score.toFixed(2)} · q {f.quality.toFixed(2)}
+                            </span>
+                          ))}
+                        </div>
+                      </Alert>
+                    </div>
+                  )}
+                </li>
+              ))}
+            </ul>
           )}
         </section>
 

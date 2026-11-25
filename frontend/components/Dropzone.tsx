@@ -5,8 +5,14 @@ import { Icon } from "@/components/ui";
 import { fmtSize, shrinkForUpload } from "@/lib/image";
 import { useT } from "@/lib/i18n";
 
+/** Most photos taken in one batch: keeps a small server from running out of memory. */
+export const MAX_BATCH = 20;
+
 type Props = {
-  onFile: (f: File) => void;
+  /** One photo at a time (search page). */
+  onFile?: (f: File) => void;
+  /** Several photos at once (upload page). When set, the picker allows multiple files. */
+  onFiles?: (f: File[]) => void;
   label?: string;
   hint?: string;
   disabled?: boolean;
@@ -16,10 +22,12 @@ type Props = {
 
 /** Keyboard-operable (Enter/Space), labelled for screen readers, works with
  * touch (tap opens the picker) and shrinks large photos on the device first. */
-export default function Dropzone({ onFile, label, hint, disabled, locked }: Props) {
+export default function Dropzone({ onFile, onFiles, label, hint, disabled, locked }: Props) {
   const { t } = useT();
+  const multiple = !!onFiles;
   const [active, setActive] = useState(false);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [previews, setPreviews] = useState<string[]>([]);
+  const [count, setCount] = useState(0);
   const [note, setNote] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -29,10 +37,26 @@ export default function Dropzone({ onFile, label, hint, disabled, locked }: Prop
       if (!f.type.startsWith("image/")) return;
       const small = await shrinkForUpload(f);
       setNote(small !== f ? t("drop.shrunk", { from: fmtSize(f.size), to: fmtSize(small.size) }) : null);
-      setPreview(URL.createObjectURL(small));
-      onFile(small);
+      setPreviews([URL.createObjectURL(small)]);
+      setCount(1);
+      onFile?.(small);
     },
     [onFile, t]
+  );
+
+  const handleMany = useCallback(
+    async (list: FileList | null) => {
+      const all = Array.from(list ?? []).filter((f) => f.type.startsWith("image/"));
+      if (!all.length) return;
+      const chosen = all.slice(0, MAX_BATCH);
+      const small: File[] = [];
+      for (const f of chosen) small.push(await shrinkForUpload(f)); // one at a time: low memory
+      setNote(all.length > MAX_BATCH ? `Only the first ${MAX_BATCH} photos were used.` : null);
+      setPreviews(small.slice(0, 8).map((f) => URL.createObjectURL(f)));
+      setCount(small.length);
+      onFiles?.(small);
+    },
+    [onFiles]
   );
 
   const open = () => !disabled && inputRef.current?.click();
@@ -52,7 +76,8 @@ export default function Dropzone({ onFile, label, hint, disabled, locked }: Prop
       onDrop={(e) => {
         e.preventDefault();
         setActive(false);
-        handle(e.dataTransfer.files?.[0] ?? null);
+        if (multiple) handleMany(e.dataTransfer.files);
+        else handle(e.dataTransfer.files?.[0] ?? null);
       }}
       onClick={open}
       onKeyDown={(e) => {
@@ -66,16 +91,31 @@ export default function Dropzone({ onFile, label, hint, disabled, locked }: Prop
         ref={inputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
+        multiple={multiple}
         className="hidden"
         tabIndex={-1}
         aria-hidden
-        onChange={(e) => handle(e.target.files?.[0] ?? null)}
+        onChange={(e) => {
+          if (multiple) handleMany(e.target.files);
+          else handle(e.target.files?.[0] ?? null);
+          e.target.value = ""; // allow choosing the same file again
+        }}
       />
-      {preview ? (
+      {previews.length > 0 ? (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={preview} alt="" className="max-h-64 rounded-xl border border-line shadow-pop" />
-          {!disabled && <div className="mt-3 text-xs text-subtle">{t("drop.change")}</div>}
+          {multiple && count > 1 ? (
+            <div className="flex flex-wrap justify-center gap-2">
+              {previews.map((src) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={src} src={src} alt="" className="h-20 w-20 rounded-lg border border-line object-cover shadow-pop" />
+              ))}
+            </div>
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={previews[0]} alt="" className="max-h-64 rounded-xl border border-line shadow-pop" />
+          )}
+          {multiple && count > 1 && <div className="mt-2 text-sm font-medium text-fg">{count} photos selected</div>}
+          {!disabled && <div className="mt-3 text-xs text-subtle">{multiple ? "Click or drop more photos to start another batch." : t("drop.change")}</div>}
         </>
       ) : (
         <>
